@@ -1,0 +1,1239 @@
+/* ------------------------------------------------------------------------- *
+ *                                                                           *
+ * Variant Theme (Style) for Yami named Wirecast.                            *
+ *                                                                           *
+ * Mimics Telestream Wirecast: slate panels, flat hairline docks, an amber   *
+ * "selected" accent, a red "live" accent and a green Preview marker.        *
+ * Colours are sampled from a Wirecast screenshot.                           *
+ *                                                                           *
+ * For the full Wirecast feel, also enable Studio Mode and the Layers dock   *
+ * (Docks > Layers).                                                         *
+ *                                                                           *
+ * ------------------------------------------------------------------------- */
+
+@OBSThemeMeta {
+    name: 'Wirecast';
+    id: 'com.obsproject.Yami.Wirecast';
+    extends: 'com.obsproject.Yami';
+    author: 'odmundurmedia';
+    dark: 'true';
+}
+
+@OBSThemeVars {
+    /* Wirecast slate greys */
+    --grey1: #6E717A;
+    --grey2: #565867;
+    --grey3: #4A4D56;
+    --grey4: #3F4249;
+    --grey5: #373A43;
+    --grey6: #2D3039;
+    --grey7: #22252C;
+    --grey8: #181A1F;
+
+    /* Wirecast amber (selection) */
+    --wc_amber: #DF9B08;
+    --wc_amber_light: #EDB12E;
+    --wc_amber_lighter: #F5CD62;
+    --wc_amber_dark: #B47C05;
+    --wc_amber_darker: #7A5404;
+
+    /* Wirecast live red */
+    --wc_red: #E43506;
+    --wc_red_light: #F2552A;
+    --wc_red_dark: #711902;
+
+    /* Wirecast preview green */
+    --wc_green: #3DB28B;
+
+    --wc_menubar: #303336;
+    --wc_panel: #373A43;
+    --wc_dark: #22252C;
+    --wc_row: #2D3039;
+    --wc_line: #000000;
+    --wc_text: #DFE0E6;
+
+    --bg_window: var(--wc_dark);
+    --bg_base: var(--wc_panel);
+    --bg_preview: #000000;
+
+    --primary: var(--wc_amber);
+    --primary_light: var(--wc_amber_light);
+    --primary_lighter: var(--wc_amber_lighter);
+    --primary_dark: var(--wc_amber_dark);
+    --primary_darker: var(--wc_amber_darker);
+
+    --text: var(--wc_text);
+    --text_light: #FFFFFF;
+    --text_muted: #8A8C94;
+
+    --border_color: var(--wc_line);
+    --border_radius: 2px;
+    --border_radius_small: 2px;
+    --border_radius_large: 3px;
+
+    --input_bg: var(--wc_dark);
+    --input_bg_hover: #262930;
+    --input_bg_focus: #1C1F25;
+    --input_border: #45484F;
+    --input_border_hover: #5A5D66;
+    --input_border_focus: var(--wc_amber);
+
+    --button_bg: var(--wc_dark);
+    --button_bg_hover: #2C2F37;
+    --button_bg_down: #1A1C21;
+    --button_bg_disabled: #2A2D34;
+    --button_border: #45484F;
+    --button_border_hover: #6E717A;
+    --button_border_focus: var(--wc_amber);
+
+    --list_item_bg_selected: var(--wc_amber_dark);
+    --list_item_bg_hover: var(--grey4);
+
+    --scrollbar_handle: #4D4D4D;
+    --scrollbar_bg: var(--wc_row);
+    --scrollbar_hover: #5E5E5E;
+    --scrollbar_down: #707070;
+    --scrollbar_border: var(--wc_row);
+
+    --palette_link: var(--wc_amber_light);
+    --palette_linkVisited: var(--wc_amber_light);
+}
+
+/* ------------------------------------------------------------------ */
+/* Window chrome                                                       */
+
+QMenuBar {
+    background: var(--wc_menubar);
+}
+
+QMenuBar::item:selected {
+    background: var(--grey4);
+}
+
+QMainWindow::separator {
+    background: var(--wc_line);
+    width: 2px;
+    height: 2px;
+}
+
+QMainWindow::separator:hover {
+    background: var(--wc_amber);
+}
+
+/* ------------------------------------------------------------------ */
+/* Docks: flat slate panels, no rounded title tabs                     */
+
+QDockWidget {
+    font-size: var(--font_small);
+    font-weight: normal;
+    color: var(--wc_text);
+}
+
+QDockWidget::title {
+    background-color: var(--wc_panel);
+    border: none;
+    border-bottom: 1px solid var(--wc_line);
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    padding: var(--padding_base) var(--padding_xlarge);
+}
+
+OBSDock > QWidget {
+    background: var(--wc_panel);
+    border: none;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+OBSDock QToolBar {
+    background: var(--wc_panel);
+    border-top: 1px solid var(--wc_line);
+}
+
+OBSDock QToolBar QToolButton:hover {
+    border-color: var(--grey1);
+    background: var(--grey4);
+}
+
+QAbstractScrollArea {
+    border-radius: 0px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Monitors: green Preview, red Live, on the dark centre area          */
+
+#canvasEditor {
+    background: var(--wc_dark);
+}
+
+OBSQTDisplay {
+    qproperty-displayBackgroundColor: var(--wc_dark);
+}
+
+.label-preview-title {
+    font-size: var(--font_base);
+    font-weight: normal;
+    color: var(--wc_text);
+    background: transparent;
+    padding: 2px 0px;
+    margin-bottom: 2px;
+    border-bottom: 2px solid var(--wc_green);
+}
+
+#programLabel {
+    border-bottom: 2px solid var(--wc_red);
+}
+
+/* ------------------------------------------------------------------ */
+/* Scenes list in grid mode                                            */
+
+.list-grid SceneTree::item {
+    color: var(--text_light);
+    background-color: #000000;
+    border: 2px solid transparent;
+    border-radius: 0px;
+    margin: 3px;
+}
+
+.list-grid SceneTree::item:hover {
+    border-color: var(--grey1);
+}
+
+.list-grid SceneTree::item:selected,
+.list-grid SceneTree::item:selected:hover {
+    background-color: #000000;
+    border-color: var(--wc_amber);
+}
+
+QListWidget::item:selected {
+    background-color: var(--wc_amber_dark);
+}
+
+/* ------------------------------------------------------------------ */
+/* Layers dock: Wirecast's shot rows                                   */
+
+LayersPanel,
+LayersPanel #layersContent {
+    background: var(--wc_row);
+}
+
+.layer-row {
+    background: var(--wc_row);
+    border: none;
+}
+
+/* The line under each layer; drag it to resize the layer */
+#layerDivider {
+    background: var(--wc_row);
+    border: none;
+    border-bottom: 1px solid var(--wc_line);
+}
+
+#layerDivider:hover {
+    border-bottom: 1px solid var(--wc_amber);
+}
+
+/* Layer picked with Go to Layer (or the last shot clicked) */
+.layer-row.layer-current #layerHeader {
+    color: var(--wc_amber);
+}
+
+/* Switch > Layer Visibility: hidden layer */
+.layer-row.layer-hidden #layerHeader {
+    color: #3E4048;
+}
+
+.layer-row.drop-target {
+    background: #3A3528;
+}
+
+.layer-row #layerHeader {
+    background: transparent;
+    color: #6E717A;
+    font-size: var(--font_base);
+    font-weight: bold;
+    padding-top: 4px;
+    border: none;
+}
+
+.shot-tile {
+    background: #000000;
+    border: 2px solid transparent;
+    border-radius: 6px;
+}
+
+.shot-tile:hover {
+    border-color: #5A5D66;
+}
+
+/* In Preview: green outline, as in Wirecast */
+.shot-tile.shot-active {
+    border-color: #45C79B;
+}
+
+.shot-tile.shot-active #shotName {
+    background: #2E8466;
+}
+
+.shot-tile #shotThumbnail {
+    background: transparent;
+    border: none;
+    border-radius: 0px;
+}
+
+.shot-tile.shot-clear #shotThumbnail {
+    background: #000000;
+    border: none;
+}
+
+/* Name bar under the thumbnail */
+.shot-tile #shotName {
+    background: #000000;
+    color: #FFFFFF;
+    font-size: var(--font_small);
+    padding: 1px 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* On air: red outline and name bar */
+.shot-tile.shot-live {
+    border-color: var(--wc_red);
+}
+
+.shot-tile.shot-live #shotName {
+    background: var(--wc_red_dark);
+}
+
+/* Shots on a hidden layer turn grey */
+.shot-tile.shot-hidden #shotName {
+    background: #2A2B30;
+    color: #7A7C84;
+}
+
+/* Number key from Keyboard Shortcut, drawn on the shot icon */
+.shot-tile #shotHotkey {
+    background: #000000;
+    color: #FFFFFF;
+    font-size: var(--font_small);
+    font-weight: bold;
+    border: 1px solid #FFFFFF;
+    border-radius: 2px;
+    padding: 0px 3px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons: flat dark with light hairline                              */
+
+QPushButton {
+    border-radius: 2px;
+}
+
+QPushButton:checked {
+    background-color: var(--wc_amber);
+    border-color: var(--wc_amber_light);
+    color: #1F252E;
+}
+
+/* Studio Mode transition button = Wirecast's amber "Smooth" */
+#transitionButton {
+    background: var(--wc_amber);
+    border-color: var(--wc_amber);
+    color: #1F252E;
+}
+
+#transitionButton:hover {
+    background: var(--wc_amber_light);
+    border-color: var(--wc_amber_lighter);
+}
+
+#transitionButton:pressed {
+    background: var(--wc_amber_dark);
+}
+
+/* ------------------------------------------------------------------ */
+/* Broadcast controls: on-air states go red                            */
+
+#controlsFrame {
+    background: var(--wc_panel);
+}
+
+#streamButton:!hover:!pressed.state-active,
+#recordButton:!hover:!pressed.state-active,
+#pauseRecordButton:!hover:!pressed.state-active,
+#broadcastButton:!hover:!pressed.state-active {
+    background: var(--wc_red);
+    border-color: var(--wc_red_light);
+    color: #FFFFFF;
+}
+
+#streamButton:hover:!pressed.state-active,
+#recordButton:hover:!pressed.state-active,
+#pauseRecordButton:hover:!pressed.state-active,
+#broadcastButton:hover:!pressed.state-active {
+    background: var(--wc_red_light);
+    border-color: #F57A58;
+    color: #FFFFFF;
+}
+
+#replayBufferButton:!pressed.state-active,
+#virtualCamButton:!pressed.state-active {
+    background: var(--wc_green);
+    color: #FFFFFF;
+}
+
+#modeSwitch:!hover:!pressed.state-active {
+    background: var(--wc_amber);
+    color: #1F252E;
+}
+
+#modeSwitch:hover:!pressed.state-active {
+    background: var(--wc_amber_light);
+    color: #1F252E;
+}
+
+/* ------------------------------------------------------------------ */
+/* Transitions T-bar                                                    */
+
+#transitionsFrame {
+    background: var(--wc_panel);
+}
+
+.slider-tbar::groove:horizontal {
+    background: var(--wc_dark);
+    border: 1px solid #000000;
+}
+
+.slider-tbar::sub-page:horizontal {
+    background: var(--wc_amber);
+}
+
+.slider-tbar::handle:horizontal {
+    background: var(--wc_text);
+    border: 1px solid #000000;
+    border-radius: 1px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Audio meters & sliders                                               */
+
+QSlider::sub-page:horizontal {
+    background: var(--wc_amber);
+}
+
+QSlider::handle {
+    background: var(--wc_text);
+}
+
+VolumeMeter {
+    qproperty-backgroundNominalColor: #1C4A3B;
+    qproperty-backgroundWarningColor: #5A4410;
+    qproperty-backgroundErrorColor: #5A1A08;
+    qproperty-foregroundNominalColor: #3DD28C;
+    qproperty-foregroundWarningColor: #DF9B08;
+    qproperty-foregroundErrorColor: #E43506;
+}
+
+/* ------------------------------------------------------------------ */
+/* Status bar & tabs                                                    */
+
+OBSBasicStatusBar {
+    background: var(--wc_dark);
+    border-top: 1px solid var(--wc_line);
+}
+
+QTabBar::tab:selected {
+    background: var(--wc_amber);
+    border-color: var(--wc_amber);
+    color: #1F252E;
+}
+
+/* ------------------------------------------------------------------ */
+/* Output toolbar above the monitors                                    */
+
+#wirecastBroadcastBar {
+    background: var(--wc_dark);
+    min-height: 36px;
+}
+
+.wc-toolbar-button {
+    background: transparent;
+    border: 1px solid #4A4D55;
+    border-radius: 3px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.wc-toolbar-button:hover {
+    background: #2C2F37;
+    border-color: #6E717A;
+}
+
+.wc-clock {
+    color: #FFFFFF;
+    font-size: 10pt;
+    padding: 0px 2px;
+}
+
+.wc-clock.wc-clock-active {
+    color: #FFFFFF;
+}
+
+.wc-layout-button {
+    background: transparent;
+    border: 1px solid #3F4249;
+    border-radius: 0px;
+    padding: 2px 7px;
+    margin: 0px;
+}
+
+.wc-layout-button:hover {
+    background: #2C2F37;
+}
+
+.wc-layout-button:checked {
+    background: transparent;
+    border: 2px solid var(--wc_amber);
+}
+
+/* ------------------------------------------------------------------ */
+/* Sidebar: icon tabs, heading, shot name                               */
+
+#wirecastSidebar,
+#wirecastSidebarTabs,
+#wirecastSidebarPages {
+    background: var(--wc_panel);
+}
+
+.wc-sidebar-tab {
+    background: transparent;
+    border: none;
+    border-radius: 0px;
+    padding: 9px 14px;
+    margin: 0px;
+}
+
+.wc-sidebar-tab:hover {
+    background: #42454F;
+}
+
+.wc-sidebar-tab:checked {
+    background: var(--wc_amber);
+    border-radius: 4px;
+}
+
+.wc-sidebar-collapse {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    margin: 0px;
+}
+
+.wc-sidebar-collapse:hover {
+    background: #42454F;
+}
+
+#wirecastSidebarHeading {
+    color: var(--wc_text);
+    font-size: 13pt;
+    font-weight: normal;
+    padding: 14px 16px 10px 16px;
+    background: transparent;
+}
+
+#wirecastShotNameRow QLabel {
+    font-size: var(--font_small);
+    color: var(--wc_text);
+}
+
+#wirecastShotName {
+    background: var(--wc_dark);
+    border: 1px solid #2A2D33;
+    border-radius: 0px;
+    padding: 1px 4px;
+    font-size: var(--font_small);
+}
+
+#wirecastShotName:focus {
+    border-color: var(--wc_amber);
+}
+
+/* ------------------------------------------------------------------ */
+/* Welcome window                                                       */
+
+#wcWelcome {
+    background: var(--wc_dark);
+}
+
+#wcWelcomeHome,
+#wcWelcomeHomeContent {
+    background: #000000;
+    border: none;
+}
+
+#wcWelcomeAppName {
+    color: #FFFFFF;
+    font-size: 34pt;
+    font-weight: 300;
+    background: transparent;
+}
+
+#wcWelcomeVersion {
+    color: #C9CAD1;
+    font-size: 14pt;
+    background: transparent;
+}
+
+#wcWelcomeSection {
+    color: var(--wc_text);
+    font-size: 13pt;
+    background: transparent;
+}
+
+.wc-welcome-card {
+    background: #16181D;
+    border: 2px solid transparent;
+    border-radius: 7px;
+}
+
+.wc-welcome-card:hover {
+    border-color: #2A6FC9;
+}
+
+.wc-welcome-card.wc-welcome-current {
+    border-color: var(--wc_amber);
+}
+
+#wcWelcomeCardName {
+    color: #FFFFFF;
+    background: transparent;
+}
+
+#wcWelcomeCardDetail {
+    color: #8A8C94;
+    font-size: var(--font_small);
+    background: transparent;
+}
+
+#wcWelcomeSide {
+    background: #2D3039;
+    border-left: 1px solid #000000;
+}
+
+.wc-welcome-action {
+    background: transparent;
+    border: none;
+    border-radius: 0px;
+    color: var(--wc_text);
+    padding: 4px 8px;
+    margin: 0px;
+    text-align: left;
+}
+
+.wc-welcome-action:hover {
+    background: #1E6FD0;
+    color: #FFFFFF;
+}
+
+#wcWelcomeLine {
+    background: #4A4D55;
+}
+
+#wcWelcomeRecentTitle {
+    color: var(--wc_text);
+    font-size: 11pt;
+    padding-left: 2px;
+    background: transparent;
+}
+
+.wc-welcome-recent {
+    background: transparent;
+    border: none;
+}
+
+.wc-welcome-recent:hover {
+    background: #1E6FD0;
+}
+
+#wcWelcomeRecentName {
+    color: var(--wc_text);
+    background: transparent;
+}
+
+#wcWelcomeFooter {
+    background: #2D3039;
+    border-top: 1px solid #000000;
+}
+
+#wcWelcomeContinue {
+    min-height: 0px;
+    padding: 0px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Shot Editor pages                                                    */
+
+#wcEditorPage,
+#wcEditorContent,
+#wcShotLayersPage,
+#wcShotLayerList,
+#wcShotLayerListContent,
+#wcSourcePropertiesPage {
+    background: var(--wc_panel);
+    border: none;
+}
+
+/* + - and up/down button pairs under the shot name */
+.wc-tool-group {
+    background: transparent;
+    border: 1px solid #50535B;
+    border-radius: 4px;
+}
+
+.wc-editor-tool {
+    background: transparent;
+    border: none;
+    border-radius: 0px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.wc-editor-tool.wc-tool-divided {
+    border-right: 1px solid #50535B;
+}
+
+.wc-editor-tool:hover {
+    background: #454852;
+}
+
+.wc-editor-tool:disabled {
+    background: transparent;
+}
+
+.wc-editor-tool::menu-indicator {
+    image: none;
+}
+
+/* One source layer of the shot */
+#shotLayerRow {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #30333B;
+}
+
+#shotLayerRow:hover {
+    background: #3F424B;
+}
+
+#shotLayerRow.selected {
+    background: #4B4E58;
+}
+
+#shotLayerName {
+    color: var(--wc_text);
+    font-size: var(--font_small);
+    background: transparent;
+}
+
+.wc-layer-toggle {
+    background: transparent;
+    border: none;
+    padding: 1px;
+    margin: 0px;
+}
+
+.wc-layer-toggle:hover {
+    background: #50535D;
+}
+
+.wc-layer-toggle:checked {
+    background: transparent;
+}
+
+.wc-layer-toggle:checked:hover {
+    background: #50535D;
+}
+
+.wc-editor-label {
+    color: var(--wc_text);
+    font-size: var(--font_small);
+}
+
+.wc-editor-empty {
+    color: #8A8C94;
+    font-size: var(--font_small);
+}
+
+.wc-editor-subtitle {
+    color: var(--wc_text);
+}
+
+/* Collapsible Crop / Color / Build In panes */
+.wc-editor-section {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #2A2D33;
+    border-radius: 0px;
+    padding: 4px 0px;
+    margin: 4px 0px 0px 0px;
+    color: var(--wc_text);
+    text-align: left;
+}
+
+.wc-editor-section:checked,
+.wc-editor-section:hover {
+    background: transparent;
+    color: var(--wc_text);
+}
+
+#wcKeyColorSwatch {
+    border: 1px solid #000000;
+    border-radius: 0px;
+    padding: 0px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cut / Smooth / Go strip under the monitors                           */
+
+#wirecastTransitionBar {
+    background: var(--wc_dark);
+}
+
+.wc-transition-slot {
+    background: var(--wc_dark);
+    border: 1px solid #4A4D55;
+    border-radius: 4px;
+    color: var(--wc_text);
+    padding: 0px 22px 0px 8px;
+    margin: 0px;
+}
+
+.wc-transition-slot:hover {
+    border-color: #6E717A;
+}
+
+.wc-transition-slot::menu-button {
+    border: none;
+    width: 20px;
+}
+
+.wc-transition-slot::menu-arrow {
+    image: url(theme:Wirecast/caret-down.svg);
+    width: 10px;
+    height: 10px;
+}
+
+.wc-transition-slot.wc-slot-active::menu-arrow {
+    image: url(theme:Wirecast/caret-down-dark.svg);
+}
+
+.wc-transition-slot.wc-slot-active {
+    background: var(--wc_amber);
+    border-color: var(--wc_amber);
+    color: #1F252E;
+}
+
+#wirecastGoButton {
+    background: var(--wc_dark);
+    border: 1px solid #4A4D55;
+    border-radius: 4px;
+    color: var(--wc_text);
+    margin: 0px;
+}
+
+#wirecastGoButton:hover {
+    border-color: #6E717A;
+    background: #2C2F37;
+}
+
+#wirecastGoButton:pressed {
+    background: var(--wc_amber);
+}
+
+/* Off in Live-only layout and while AutoLive is on */
+#wirecastGoButton:disabled {
+    border-color: #33363D;
+    color: #5A5D66;
+}
+
+#wirecastMonitorGrip {
+    color: #5A5D66;
+    font-size: 10pt;
+    min-width: 14px;
+    max-width: 14px;
+    background: transparent;
+}
+
+#wirecastMonitorGrip:hover,
+#wirecastMonitorGrip[dragging="true"] {
+    color: var(--wc_text);
+}
+
+/* ------------------------------------------------------------------ */
+/* Settings: Wirecast-style preferences window                          */
+
+OBSBasicSettings {
+    background: var(--wc_panel);
+}
+
+OBSBasicSettings #listWidget {
+    background: var(--wc_dark);
+    border: none;
+    border-bottom: 1px solid #000000;
+    border-radius: 0px;
+    padding: 4px 8px 0px 8px;
+}
+
+OBSBasicSettings #listWidget::item {
+    color: var(--wc_text);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0px;
+    padding: 6px 2px 4px 2px;
+    margin: 0px 1px;
+}
+
+OBSBasicSettings #listWidget::item:hover {
+    background: #2C2F37;
+}
+
+OBSBasicSettings #listWidget::item:selected,
+OBSBasicSettings #listWidget::item:selected:hover {
+    background: transparent;
+    color: var(--wc_amber);
+    border-bottom: 2px solid var(--wc_amber);
+}
+
+OBSBasicSettings #settingsPages,
+OBSBasicSettings QScrollArea,
+OBSBasicSettings QScrollArea > QWidget > QWidget {
+    background: var(--wc_panel);
+}
+
+OBSBasicSettings QGroupBox,
+OBSBasicSettings #PropertiesContainer {
+    background: var(--wc_row);
+    border: 1px solid #2A2D33;
+    border-radius: 0px;
+}
+
+OBSBasicSettings QGroupBox::title {
+    color: var(--wc_text);
+}
+
+OBSBasicSettings QDialogButtonBox QPushButton {
+    min-width: 80px;
+}
+
+OBSBasicSettings QDialogButtonBox QPushButton:default {
+    background: var(--wc_amber);
+    border-color: var(--wc_amber);
+    color: #1F252E;
+}
+
+/* Tabs inside settings pages (e.g. Output > Advanced) */
+OBSBasicSettings QTabBar::tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--wc_text);
+    padding: 6px 14px;
+}
+
+OBSBasicSettings QTabBar::tab:selected {
+    background: transparent;
+    color: var(--wc_amber);
+    border-bottom: 2px solid var(--wc_amber);
+}
+
+/* Snapshot button under the Live monitor */
+#wirecastSnapshotButton {
+    background: transparent;
+    border: none;
+    padding: 2px;
+    margin: 0px;
+}
+
+#wirecastSnapshotButton:hover {
+    background: #2C2F37;
+}
+
+#wirecastPreviewMeter,
+#wirecastProgramMeter {
+    background: transparent;
+}
+
+/* Speaker / headphone buttons under the meters */
+.wc-meter-button {
+    background: transparent;
+    border: 1px solid #4A4D55;
+    border-radius: 3px;
+    padding: 1px;
+    margin: 0px;
+}
+
+.wc-meter-button:hover {
+    background: #2C2F37;
+    border-color: #6E717A;
+}
+
+.wc-meter-button:checked {
+    background: transparent;
+    border-color: var(--wc_amber);
+}
+
+
+/* ---- Thin line icons (generated from Yami.obt by the icon build) ---- */
+
+.icon-plus {
+    qproperty-icon: url(theme:Wirecast/plus.svg);
+}
+
+.icon-minus {
+    qproperty-icon: url(theme:Wirecast/minus.svg);
+}
+
+.icon-trash {
+    qproperty-icon: url(theme:Wirecast/trash.svg);
+}
+
+.icon-clear {
+    qproperty-icon: url(theme:Wirecast/entry-clear.svg);
+}
+
+.icon-gear {
+    qproperty-icon: url(theme:Wirecast/settings/general.svg);
+}
+
+.icon-dots-vert {
+    qproperty-icon: url(theme:Wirecast/dots-vert.svg);
+}
+
+.icon-refresh {
+    qproperty-icon: url(theme:Wirecast/refresh.svg);
+}
+
+.icon-cogs {
+    qproperty-icon: url(theme:Wirecast/cogs.svg);
+}
+
+.icon-touch {
+    qproperty-icon: url(theme:Wirecast/interact.svg);
+}
+
+.icon-up {
+    qproperty-icon: url(theme:Wirecast/up.svg);
+}
+
+.icon-down {
+    qproperty-icon: url(theme:Wirecast/down.svg);
+}
+
+.icon-pause {
+    qproperty-icon: url(theme:Wirecast/media-pause.svg);
+}
+
+.icon-filter {
+    qproperty-icon: url(theme:Wirecast/filter.svg);
+}
+
+.icon-revert {
+    qproperty-icon: url(theme:Wirecast/revert.svg);
+}
+
+.icon-save {
+    qproperty-icon: url(theme:Wirecast/save.svg);
+}
+
+.icon-close {
+    qproperty-icon: url(theme:Wirecast/close.svg);
+}
+
+.icon-pin {
+    qproperty-icon: url(theme:Wirecast/pin.svg);
+}
+
+.icon-layout-vertical {
+    qproperty-icon: url(theme:Wirecast/layout-vertical.svg);
+}
+
+.icon-layout-horizontal {
+    qproperty-icon: url(theme:Wirecast/layout-horizontal.svg);
+}
+
+.icon-media-play {
+    qproperty-icon: url(theme:Wirecast/media/media_play.svg);
+}
+
+.icon-media-pause {
+    qproperty-icon: url(theme:Wirecast/media/media_pause.svg);
+}
+
+.icon-media-restart {
+    qproperty-icon: url(theme:Wirecast/media/media_restart.svg);
+}
+
+.icon-media-stop {
+    qproperty-icon: url(theme:Wirecast/media/media_stop.svg);
+}
+
+.icon-media-next {
+    qproperty-icon: url(theme:Wirecast/media/media_next.svg);
+}
+
+.icon-media-prev {
+    qproperty-icon: url(theme:Wirecast/media/media_previous.svg);
+}
+
+QMenu::right-arrow {
+    image: url(theme:Wirecast/expand.svg);
+}
+
+QDockWidget {
+    titlebar-close-icon: url(theme:Wirecast/close.svg);
+    titlebar-normal-icon: url(theme:Wirecast/popout.svg);
+}
+
+QPushButton#sourcePropertiesButton {
+    qproperty-icon: url(theme:Wirecast/settings/general.svg);
+}
+
+QPushButton#sourceFiltersButton {
+    qproperty-icon: url(theme:Wirecast/filter.svg);
+}
+
+QToolBarExtension {
+    qproperty-icon: url(theme:Wirecast/dots-vert.svg);
+}
+
+QComboBox::down-arrow,
+QDateTimeEdit::down-arrow {
+    image: url(theme:Wirecast/collapse.svg);
+}
+
+QComboBox::down-arrow:editable,
+QDateTimeEdit::down-arrow:editable {
+    image: url(theme:Wirecast/collapse.svg);
+}
+
+QSpinBox::up-arrow,
+QDoubleSpinBox::up-arrow {
+    image: url(theme:Wirecast/up.svg);
+}
+
+QSpinBox::down-arrow,
+QDoubleSpinBox::down-arrow {
+    image: url(theme:Wirecast/down.svg);
+}
+
+QPushButton::menu-indicator {
+    image: url(theme:Wirecast/collapse.svg);
+}
+
+.btn-mute {
+    qproperty-icon: url(theme:Wirecast/settings/audio.svg);
+}
+
+.btn-mute.checked {
+    qproperty-icon: url(theme:Wirecast/mute.svg);
+}
+
+.btn-mute.mute-warning {
+    qproperty-icon: url(theme:Wirecast/unassigned.svg);
+}
+
+.btn-monitor {
+    qproperty-icon: url(theme:Wirecast/headphones-off.svg);
+}
+
+.btn-monitor.checked {
+    qproperty-icon: url(theme:Wirecast/headphones.svg);
+}
+
+OBSBasicSettings {
+    qproperty-generalIcon: url(theme:Wirecast/settings/general.svg);
+    qproperty-appearanceIcon: url(theme:Wirecast/settings/appearance.svg);
+    qproperty-streamIcon: url(theme:Wirecast/settings/stream.svg);
+    qproperty-outputIcon: url(theme:Wirecast/settings/output.svg);
+    qproperty-audioIcon: url(theme:Wirecast/settings/audio.svg);
+    qproperty-videoIcon: url(theme:Wirecast/settings/video.svg);
+    qproperty-hotkeysIcon: url(theme:Wirecast/settings/hotkeys.svg);
+    qproperty-accessibilityIcon: url(theme:Wirecast/settings/accessibility.svg);
+    qproperty-advancedIcon: url(theme:Wirecast/settings/advanced.svg);
+}
+
+.indicator-lock::indicator:checked,
+.indicator-lock::indicator:checked:hover {
+    image: url(theme:Wirecast/locked.svg);
+}
+
+.indicator-visibility::indicator:checked,
+.indicator-visibility::indicator:checked:hover {
+    image: url(theme:Wirecast/visible.svg);
+}
+
+.indicator-expand::indicator:checked,
+.indicator-expand::indicator:checked:hover {
+    image: url(theme:Wirecast/expand.svg);
+}
+
+.indicator-expand::indicator:unchecked,
+.indicator-expand::indicator:unchecked:hover {
+    image: url(theme:Wirecast/collapse.svg);
+}
+
+OBSBasic {
+    qproperty-imageIcon: url(theme:Wirecast/sources/image.svg);
+    qproperty-colorIcon: url(theme:Wirecast/sources/brush.svg);
+    qproperty-slideshowIcon: url(theme:Wirecast/sources/slideshow.svg);
+    qproperty-audioInputIcon: url(theme:Wirecast/sources/microphone.svg);
+    qproperty-audioOutputIcon: url(theme:Wirecast/settings/audio.svg);
+    qproperty-desktopCapIcon: url(theme:Wirecast/settings/video.svg);
+    qproperty-windowCapIcon: url(theme:Wirecast/sources/window.svg);
+    qproperty-gameCapIcon: url(theme:Wirecast/sources/gamepad.svg);
+    qproperty-cameraIcon: url(theme:Wirecast/sources/camera.svg);
+    qproperty-textIcon: url(theme:Wirecast/sources/text.svg);
+    qproperty-mediaIcon: url(theme:Wirecast/sources/media.svg);
+    qproperty-browserIcon: url(theme:Wirecast/sources/globe.svg);
+    qproperty-groupIcon: url(theme:Wirecast/sources/group.svg);
+    qproperty-sceneIcon: url(theme:Wirecast/sources/scene.svg);
+    qproperty-defaultIcon: url(theme:Wirecast/sources/default.svg);
+    qproperty-audioProcessOutputIcon: url(theme:Wirecast/sources/windowaudio.svg);
+}
+
+OBSYoutubeActions {
+    qproperty-thumbPlaceholder: url(theme:Wirecast/sources/image.svg);
+}
+
+QDateTimeEdit::down-arrow {
+    image: url(theme:Wirecast/down.svg);
+}
+
+#qt_calendar_monthbutton::menu-indicator {
+    image: url(theme:Wirecast/down.svg);
+}
+
+QCalendarWidget #qt_calendar_prevmonth {
+    qproperty-icon: url(theme:Wirecast/left.svg);
+}
+
+QCalendarWidget #qt_calendar_nextmonth {
+    qproperty-icon: url(theme:Wirecast/right.svg);
+}
+
+.btn-create-new {
+    qproperty-icon: url(theme:Wirecast/plus.svg);
+}
+
+idian--Row QComboBox::down-arrow {
+    image: url(theme:Wirecast/collapse.svg);
+}
+
+idian--ExpandButton {
+    qproperty-icon: url(theme:Wirecast/down.svg);
+}
+
+idian--ExpandButton.checked {
+    qproperty-icon: url(theme:Wirecast/up.svg);
+}
