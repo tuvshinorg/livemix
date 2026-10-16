@@ -71,6 +71,8 @@ class ShotTile : public QFrame {
 
 	QLabel *thumbnailLabel = nullptr;
 	QLabel *nameLabel = nullptr;
+	/* "Live" / "Preview" after the name, so state is not told by colour alone */
+	QLabel *stateLabel = nullptr;
 	QLabel *hotkeyLabel = nullptr;
 	QPointer<ThumbnailView> thumbnail;
 	QPixmap pixmap;
@@ -80,10 +82,16 @@ class ShotTile : public QFrame {
 	bool pressed = false;
 
 	void updateClasses();
+	void updateNameText();
 	void updateThumbnailLabel();
 	void applyZoom();
 
 public:
+	/* Picture size at a zoom percentage; the tile adds its outline margin and caption */
+	static QSize thumbnailSize(int zoom);
+	/* Room around the picture for the Preview / Live outline */
+	static constexpr int kOutlineMargin = 5;
+
 	/* A null scene creates the "Clear" tile that empties the layer */
 	ShotTile(QWidget *parent, obs_source_t *scene, int layer, int zoom);
 
@@ -102,6 +110,8 @@ public:
 	void requestThumbnailUpdate();
 
 protected:
+	bool event(QEvent *event) override;
+	void paintEvent(QPaintEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
@@ -123,6 +133,9 @@ class LayerRow : public QFrame {
 	int layer;
 	QLabel *header = nullptr;
 	QHBoxLayout *tileLayout = nullptr;
+	/* "Add shot" at the end of the row; opens the row menu */
+	QWidget *addShotHolder = nullptr;
+	QWidget *addShotButton = nullptr;
 
 public:
 	LayerRow(QWidget *parent, int layer);
@@ -130,6 +143,8 @@ public:
 	int getLayer() const { return layer; }
 	void addTile(ShotTile *tile);
 	void setState(bool hidden, bool current);
+	/* Sizes "Add shot" like the row's shot pictures */
+	void setZoom(int percent);
 
 protected:
 	void dragEnterEvent(QDragEnterEvent *event) override;

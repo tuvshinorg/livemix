@@ -13,9 +13,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-/* Wirecast-style output toolbar that sits above the monitors:
- *   [stream] Stream: 00:00:00  [record] Record: 00:00:00  [replay] Replay: 00:00:00  [display]
- * with the monitor layout switch (Preview + Live / Live only) on the right. */
+/* Output bar that sits above the monitors:
+ *   ( Stream 00:00:00 ) ( Record 00:00:00 ) ( Replay 00:00:00 ) [display]
+ * with the monitor layout switch (Preview + Live / Preview / Live) on the right.
+ * Each output is one pill that turns red while it runs. */
 
 #pragma once
 
@@ -25,7 +26,6 @@
 #include <QFrame>
 #include <QTimer>
 
-class QLabel;
 class QToolButton;
 
 class BroadcastBar : public QFrame {
@@ -33,7 +33,6 @@ class BroadcastBar : public QFrame {
 
 	struct OutputClock {
 		QToolButton *button = nullptr;
-		QLabel *label = nullptr;
 		QString caption;
 		int glyph = 0;
 		QElapsedTimer elapsed;

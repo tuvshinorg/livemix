@@ -18,6 +18,14 @@
     <file>images/down.svg</file>
     <file>images/up.svg</file>
     <file>images/obs.png</file>
+    <file>images/livemix/livemix-16.png</file>
+    <file>images/livemix/livemix-20.png</file>
+    <file>images/livemix/livemix-24.png</file>
+    <file>images/livemix/livemix-32.png</file>
+    <file>images/livemix/livemix-48.png</file>
+    <file>images/livemix/livemix-64.png</file>
+    <file>images/livemix/livemix-256.png</file>
+    <file>images/livemix/livemix-mark.svg</file>
     <file>images/obs_macos.svg</file>
     <file>images/obs_paused.png</file>
     <file>images/obs_paused_macos.svg</file>
@@ -94,5 +102,8 @@
     <file>fonts/OpenSans-Regular.ttf</file>
     <file>fonts/OpenSans-Bold.ttf</file>
     <file>fonts/OpenSans-Italic.ttf</file>
+    <file>fonts/Onest-Regular.ttf</file>
+    <file>fonts/Onest-Medium.ttf</file>
+    <file>fonts/Onest-SemiBold.ttf</file>
   </qresource>
 </RCC>

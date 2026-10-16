@@ -20,14 +20,10 @@ target_sources(
     dialogs/OBSUpdate.hpp
     forms/OBSUpdate.ui
     obs.rc
-    utility/AutoUpdateThread.cpp
-    utility/AutoUpdateThread.hpp
     utility/CrashHandler_Windows.cpp
+    utility/LiveMixUpdater.cpp
+    utility/LiveMixUpdater.hpp
     utility/NativeEventFilter_Windows.cpp
-    utility/WhatsNewBrowserInitThread.cpp
-    utility/WhatsNewBrowserInitThread.hpp
-    utility/WhatsNewInfoThread.cpp
-    utility/WhatsNewInfoThread.hpp
     utility/crypto-helpers-mbedtls.cpp
     utility/crypto-helpers.hpp
     utility/models/branches.hpp
@@ -60,16 +56,8 @@ target_compile_definitions(obs-studio PRIVATE PSAPI_VERSION=2)
 
 target_link_options(obs-studio PRIVATE /IGNORE:4099 $<$<CONFIG:DEBUG>:/NODEFAULTLIB:MSVCRT>)
 
-# Set commit for untagged version comparisons in the Windows updater
-if(OBS_VERSION MATCHES ".+g[a-f0-9]+.*")
-  string(REGEX REPLACE ".+g([a-f0-9]+).*$" "\\1" OBS_COMMIT ${OBS_VERSION})
-else()
-  set(OBS_COMMIT "")
-endif()
-
-set_source_files_properties(utility/AutoUpdateThread.cpp PROPERTIES COMPILE_DEFINITIONS OBS_COMMIT="${OBS_COMMIT}")
-
-add_subdirectory(updater)
+# LiveMix updates through its own installer (utility/LiveMixUpdater.cpp), so the
+# OBS Studio updater and its obsproject.com update channel are not built.
 
 set_property(TARGET obs-studio APPEND PROPERTY AUTORCC_OPTIONS --format-version 1)
 

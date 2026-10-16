@@ -20,8 +20,10 @@
 
 #include <qt-wrappers.hpp>
 
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QMenu>
+#include <QSignalBlocker>
 #include <QToolButton>
 
 #include <cstring>
@@ -88,15 +90,16 @@ TransitionBar::TransitionBar(QWidget *parent) : QFrame(parent)
 	setObjectName("wirecastTransitionBar");
 
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	layout->setContentsMargins(0, 6, 0, 8);
-	layout->setSpacing(10);
+	layout->setContentsMargins(0, 8, 0, 12);
+	layout->setSpacing(8);
 	layout->addStretch();
 
 	for (int slot = 0; slot < kSlotCount; slot++) {
 		QToolButton *button = new QToolButton(this);
 		button->setPopupMode(QToolButton::MenuButtonPopup);
 		button->setToolButtonStyle(Qt::ToolButtonTextOnly);
-		button->setFixedSize(130, 30);
+		button->setFixedSize(120, 32);
+		button->setCursor(Qt::PointingHandCursor);
 		button->setMenu(new QMenu(button));
 		setClasses(button, "wc-transition-slot");
 
@@ -107,17 +110,34 @@ TransitionBar::TransitionBar(QWidget *parent) : QFrame(parent)
 		layout->addWidget(button);
 	}
 
+	/* Ivory Go button: the one primary action on screen */
 	goButton = new QToolButton(this);
 	goButton->setObjectName("wirecastGoButton");
-	goButton->setIcon(QIcon(WirecastIcons::pixmap(WirecastIcons::Glyph::Go, WirecastIcons::kIconColor, 22,
-						      devicePixelRatioF())));
-	goButton->setIconSize(QSize(22, 22));
-	goButton->setText(QString::fromUtf8("○"));
+	QIcon goIcon;
+	goIcon.addPixmap(WirecastIcons::pixmap(WirecastIcons::Glyph::Go, WirecastIcons::kOnIvory, 14,
+					       devicePixelRatioF()),
+			 QIcon::Normal);
+	goIcon.addPixmap(WirecastIcons::pixmap(WirecastIcons::Glyph::Go, WirecastIcons::kIconMuted, 14,
+					       devicePixelRatioF()),
+			 QIcon::Disabled);
+	goButton->setIcon(goIcon);
+	goButton->setIconSize(QSize(14, 14));
+	goButton->setText(QTStr("Wirecast.Go.Label"));
 	goButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	goButton->setFixedSize(65, 30);
+	goButton->setLayoutDirection(Qt::RightToLeft);
+	goButton->setFixedSize(68, 32);
+	goButton->setCursor(Qt::PointingHandCursor);
 	goButton->setToolTip(QTStr("Wirecast.Go"));
 	connect(goButton, &QToolButton::clicked, this, []() { obs_frontend_preview_program_trigger_transition(); });
 	layout->addWidget(goButton);
+
+	layout->addSpacing(8);
+	autoLiveBox = new QCheckBox(QTStr("Wirecast.Transition.AutoLive"), this);
+	autoLiveBox->setObjectName("wirecastAutoLive");
+	autoLiveBox->setToolTip(QTStr("Wirecast.Go.AutoLive"));
+	autoLiveBox->setCursor(Qt::PointingHandCursor);
+	connect(autoLiveBox, &QCheckBox::toggled, this, &TransitionBar::autoLiveToggled);
+	layout->addWidget(autoLiveBox);
 
 	layout->addStretch();
 
@@ -198,6 +218,10 @@ void TransitionBar::selectSlot(int slot)
 void TransitionBar::setAutoLive(bool enabled)
 {
 	autoLive = enabled;
+	{
+		QSignalBlocker block(autoLiveBox);
+		autoLiveBox->setChecked(enabled);
+	}
 	refresh();
 }
 

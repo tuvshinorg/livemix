@@ -22,7 +22,7 @@
 #include <dialogs/OBSWhatsNew.hpp>
 
 #ifdef _WIN32
-#include <utility/AutoUpdateThread.hpp>
+#include <utility/LiveMixUpdater.hpp>
 #endif
 #ifdef ENABLE_SPARKLE_UPDATER
 #include <utility/MacUpdateThread.hpp>
@@ -38,10 +38,6 @@
 #endif
 #include <qt-wrappers.hpp>
 
-#ifdef _WIN32
-#define UPDATE_CHECK_INTERVAL (60 * 60 * 24 * 4) /* 4 days */
-#endif
-
 struct QCef;
 struct QCefCookieManager;
 
@@ -53,6 +49,9 @@ using namespace std;
 namespace {
 
 QPointer<OBSWhatsNew> obsWhatsNew;
+#ifdef _WIN32
+QPointer<LiveMixUpdater> liveMixUpdater;
+#endif
 
 template<typename OBSRef> struct SignalContainer {
 	OBSRef ref;
@@ -183,34 +182,24 @@ void OBSBasic::TimedCheckForUpdates()
 #if defined(ENABLE_SPARKLE_UPDATER)
 	CheckForUpdates(false);
 #elif _WIN32
-	long long lastUpdate = config_get_int(App()->GetAppConfig(), "General", "LastUpdateCheck");
-	uint32_t lastVersion = config_get_int(App()->GetAppConfig(), "General", "LastVersion");
-
-	if (lastVersion < LIBOBS_API_VER) {
-		lastUpdate = 0;
-		config_set_int(App()->GetAppConfig(), "General", "LastUpdateCheck", 0);
-	}
-
-	long long t = (long long)time(nullptr);
-	long long secs = t - lastUpdate;
-
-	if (secs > UPDATE_CHECK_INTERVAL) {
-		CheckForUpdates(false);
-	}
+	/* One request to the GitHub releases of LiveMix on every start */
+	CheckForUpdates(false);
 #endif
 }
 
 void OBSBasic::CheckForUpdates(bool manualUpdate)
 {
 #if _WIN32
-	ui->actionCheckForUpdates->setEnabled(false);
-	ui->actionRepair->setEnabled(false);
-
-	if (updateCheckThread && updateCheckThread->isRunning()) {
+	if (!liveMixUpdater) {
+		liveMixUpdater = new LiveMixUpdater(this);
+		connect(liveMixUpdater, &LiveMixUpdater::idle, this, &OBSBasic::updateCheckFinished);
+	}
+	if (liveMixUpdater->isBusy()) {
 		return;
 	}
-	updateCheckThread.reset(new AutoUpdateThread(manualUpdate));
-	updateCheckThread->start();
+
+	ui->actionCheckForUpdates->setEnabled(false);
+	liveMixUpdater->check(manualUpdate);
 #elif defined(ENABLE_SPARKLE_UPDATER)
 	ui->actionCheckForUpdates->setEnabled(false);
 

@@ -42,6 +42,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QScrollArea>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -65,9 +66,16 @@ constexpr const char *kReplayKey = "wc_replay";
 constexpr const char *kShotMimeType = "application/x-obs-layer-shot";
 constexpr const char *kConfigSection = "Wirecast";
 
-constexpr int kThumbWidth = 110;
-constexpr int kThumbHeight = 62;
-constexpr int kNameBarHeight = 15;
+constexpr int kThumbWidth = 128;
+constexpr int kThumbHeight = 72;
+/* Name (and Live / Preview) under the picture */
+constexpr int kCaptionHeight = 18;
+constexpr int kCaptionGap = 4;
+
+/* Tally outline colours */
+const QColor kOutlineIdle(0x2C, 0x2E, 0x33);
+const QColor kOutlineHover(0x55, 0x57, 0x5D);
+const QColor kOutlineClear(0x4A, 0x4C, 0x52);
 
 /* Shared by every panel */
 OBSWeakSource selectedScene;
@@ -182,22 +190,24 @@ void reorderMixScene(obs_scene_t *mix)
 	obs_scene_reorder_items(mix, order.data(), order.size());
 }
 
-/* Wirecast's "Clear Layer" glyph: stacked layer sheets */
-/* Wirecast's Clear Layer icon: grey layers with a red x on top */
+/* "Clear layer" icon: an empty circle with a slash, in the muted icon colour */
 QPixmap createClearLayerIcon(int size, qreal ratio)
 {
-	QPixmap icon = WirecastIcons::pixmap(WirecastIcons::Glyph::Layers, WirecastIcons::kIconMuted, size, ratio);
+	QPixmap icon(QSize(size, size) * ratio);
+	icon.setDevicePixelRatio(ratio);
+	icon.fill(Qt::transparent);
+
 	QPainter p(&icon);
 	p.setRenderHint(QPainter::Antialiasing);
-	p.setPen(QPen(WirecastIcons::kRed, std::max(1.2, size / 16.0), Qt::SolidLine, Qt::RoundCap));
-	const QPointF c(size / 2.0, size * 0.36);
-	const qreal r = size * 0.09;
-	p.drawLine(c + QPointF(-r, -r), c + QPointF(r, r));
-	p.drawLine(c + QPointF(r, -r), c + QPointF(-r, r));
+	p.scale(size / 24.0, size / 24.0);
+	p.setPen(QPen(QColor(0x75, 0x72, 0x6B), 1.6, Qt::SolidLine, Qt::RoundCap));
+	p.setBrush(Qt::NoBrush);
+	p.drawEllipse(QPointF(12, 12), 8.0, 8.0);
+	p.drawLine(QPointF(6.5, 17.5), QPointF(17.5, 6.5));
 	return icon;
 }
 
-constexpr int kTileRadius = 5;
+constexpr int kTileRadius = 6;
 
 bool isRegularScene(obs_source_t *source)
 {
@@ -398,31 +408,43 @@ ShotTile::ShotTile(QWidget *parent, obs_source_t *scene, int layer, int zoom_)
 	setAttribute(Qt::WA_Hover);
 	setCursor(Qt::PointingHandCursor);
 
-	/* Wirecast shot button: 16:9 thumbnail with the name in a bar underneath.
-	 * The theme's 2px tile border already insets the contents. */
+	/* Shot button: a rounded 16:9 picture with its tally outline painted in the
+	 * margin around it, and the name underneath */
 	QVBoxLayout *layout = new QVBoxLayout(this);
-	layout->setContentsMargins(0, 0, 0, 0);
-	layout->setSpacing(0);
+	layout->setContentsMargins(kOutlineMargin, kOutlineMargin, kOutlineMargin, 0);
+	layout->setSpacing(kCaptionGap);
 
 	thumbnailLabel = new QLabel(this);
 	thumbnailLabel->setObjectName("shotThumbnail");
 	thumbnailLabel->setAlignment(Qt::AlignCenter);
 	layout->addWidget(thumbnailLabel);
 
-	/* The number key assigned with Keyboard Shortcut, drawn on the icon like Wirecast */
+	/* The number key assigned with Keyboard Shortcut, drawn on the picture */
 	hotkeyLabel = new QLabel(thumbnailLabel);
 	hotkeyLabel->setObjectName("shotHotkey");
 	hotkeyLabel->setAlignment(Qt::AlignCenter);
-	hotkeyLabel->move(3, 3);
+	hotkeyLabel->move(5, 5);
 	hotkeyLabel->hide();
+
+	QHBoxLayout *caption = new QHBoxLayout();
+	caption->setContentsMargins(0, 0, 0, 0);
+	caption->setSpacing(6);
 
 	nameLabel = new QLabel(this);
 	nameLabel->setObjectName("shotName");
-	nameLabel->setFixedHeight(kNameBarHeight);
+	nameLabel->setFixedHeight(kCaptionHeight);
 	nameLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	/* Long names are elided; they must never widen the tile past its border */
+	/* Long names are elided; they must never widen the tile */
 	nameLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
-	layout->addWidget(nameLabel);
+	caption->addWidget(nameLabel, 1);
+
+	stateLabel = new QLabel(this);
+	stateLabel->setObjectName("shotState");
+	stateLabel->setFixedHeight(kCaptionHeight);
+	stateLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+	stateLabel->hide();
+	caption->addWidget(stateLabel);
+	layout->addLayout(caption);
 
 	applyZoom();
 
@@ -446,23 +468,39 @@ OBSSource ShotTile::getScene() const
 	return OBSGetStrongRef(weakScene);
 }
 
+QSize ShotTile::thumbnailSize(int zoom)
+{
+	return QSize(std::max(kThumbWidth * zoom / 100, 40), std::max(kThumbHeight * zoom / 100, 22));
+}
+
 void ShotTile::setName(const QString &name)
 {
 	fullName = name;
-	QFontMetrics metrics(nameLabel->font());
-	nameLabel->setText(metrics.elidedText(name, Qt::ElideRight, thumbnailLabel->width() - 8));
+	updateNameText();
 	setToolTip(name);
+}
+
+void ShotTile::updateNameText()
+{
+	/* The name gets whatever the Live / Preview word leaves */
+	int room = thumbnailLabel->width() - 4;
+	if (!stateLabel->text().isEmpty()) {
+		room -= QFontMetrics(stateLabel->font()).horizontalAdvance(stateLabel->text()) + 10;
+	}
+	QFontMetrics metrics(nameLabel->font());
+	nameLabel->setText(metrics.elidedText(fullName, Qt::ElideRight, std::max(room, 12)));
 }
 
 void ShotTile::applyZoom()
 {
-	const int w = std::max(kThumbWidth * zoom / 100, 40);
-	const int h = std::max(kThumbHeight * zoom / 100, 22);
+	const QSize thumb = thumbnailSize(zoom);
+	const int w = thumb.width();
+	const int h = thumb.height();
 	thumbnailLabel->setFixedSize(w, h);
-	setFixedSize(w + 4, h + kNameBarHeight + 4);
+	setFixedSize(w + kOutlineMargin * 2, h + kOutlineMargin + kCaptionGap + kCaptionHeight);
 
 	if (clearTile) {
-		thumbnailLabel->setPixmap(createClearLayerIcon(std::clamp(h / 2, 14, 60), devicePixelRatioF()));
+		thumbnailLabel->setPixmap(createClearLayerIcon(std::clamp(h / 3, 14, 48), devicePixelRatioF()));
 		if (!fullName.isEmpty()) {
 			const QString tip = toolTip();
 			setName(fullName);
@@ -545,6 +583,55 @@ void ShotTile::updateClasses()
 		classes += " shot-hidden";
 	}
 	setClasses(this, classes);
+
+	/* Live wins when a shot is both live and in Preview; the double outline shows both */
+	const QString state = live ? QTStr("Wirecast.Shot.StateLive")
+				   : (active ? QTStr("Wirecast.Shot.StatePreview") : QString());
+	stateLabel->setText(state);
+	stateLabel->setVisible(!state.isEmpty());
+	updateNameText();
+	update();
+}
+
+bool ShotTile::event(QEvent *event)
+{
+	if (event->type() == QEvent::HoverEnter || event->type() == QEvent::HoverLeave) {
+		update();
+	}
+	return QFrame::event(event);
+}
+
+void ShotTile::paintEvent(QPaintEvent *event)
+{
+	QFrame::paintEvent(event);
+
+	QPainter p(this);
+	p.setRenderHint(QPainter::Antialiasing);
+	p.setBrush(Qt::NoBrush);
+
+	const QRectF picture = QRectF(thumbnailLabel->geometry());
+	auto outline = [&](qreal outset, qreal width, const QColor &color, Qt::PenStyle style = Qt::SolidLine) {
+		/* The pen is centred on the path, so push it out by half its width */
+		const qreal grow = outset + width / 2.0;
+		QPen pen(color, width, style);
+		pen.setJoinStyle(Qt::RoundJoin);
+		p.setPen(pen);
+		p.drawRoundedRect(picture.adjusted(-grow, -grow, grow, grow), kTileRadius + grow, kTileRadius + grow);
+	};
+
+	const bool hover = underMouse();
+	if (live && active) {
+		outline(0.0, 2.0, WirecastIcons::kRed);
+		outline(3.5, 1.5, WirecastIcons::kGreen);
+	} else if (live) {
+		outline(0.0, 2.0, WirecastIcons::kRed);
+	} else if (active) {
+		outline(0.0, 2.0, WirecastIcons::kGreen);
+	} else if (clearTile) {
+		outline(-1.0, 1.0, hover ? kOutlineHover : kOutlineClear, Qt::DashLine);
+	} else {
+		outline(0.0, 1.0, hover ? kOutlineHover : kOutlineIdle);
+	}
 }
 
 void ShotTile::requestThumbnailUpdate()
@@ -579,20 +666,18 @@ void ShotTile::updateThumbnailLabel()
 		pixmap.scaled(thumbnailLabel->size() * ratio, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 	scaled.setDevicePixelRatio(ratio);
 
-	/* Round the top corners to match the tile, as Wirecast's shot buttons */
+	/* Round every corner; the tally outline is painted around it by the tile */
 	QPixmap rounded(thumbnailLabel->size() * ratio);
 	rounded.setDevicePixelRatio(ratio);
 	rounded.fill(Qt::transparent);
 	{
 		const QSizeF size = thumbnailLabel->size();
 		QPainterPath clip;
-		/* Winding so the square bottom half adds to the rounded rectangle instead of cutting it out */
-		clip.setFillRule(Qt::WindingFill);
-		clip.addRoundedRect(QRectF(QPointF(0, 0), size), kTileRadius - 1, kTileRadius - 1);
-		clip.addRect(QRectF(0, size.height() / 2, size.width(), size.height() / 2));
+		clip.addRoundedRect(QRectF(QPointF(0, 0), size), kTileRadius, kTileRadius);
 		QPainter p(&rounded);
 		p.setRenderHint(QPainter::Antialiasing);
-		p.setClipPath(clip.simplified());
+		p.setClipPath(clip);
+		p.fillPath(clip, QColor(0x15, 0x16, 0x18));
 		const QSizeF picture = QSizeF(scaled.size()) / ratio;
 		p.drawPixmap(QPointF((size.width() - picture.width()) / 2, (size.height() - picture.height()) / 2),
 			     scaled);
@@ -671,26 +756,57 @@ LayerRow::LayerRow(QWidget *parent, int layer) : QFrame(parent), layer(layer)
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->setSpacing(0);
 
-	/* Wirecast marks each layer row with a grab handle rather than a number */
-	header = new QLabel(QStringLiteral("="), this);
+	/* Each row is labelled with its layer */
+	header = new QLabel(QTStr("Basic.Layers.Layer").arg(layer), this);
 	header->setObjectName("layerHeader");
-	header->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-	header->setFixedWidth(22);
+	header->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	header->setFixedWidth(76);
 	header->setToolTip(QTStr("Basic.Layers.Layer").arg(layer));
 	layout->addWidget(header);
 
 	QWidget *tileArea = new QWidget(this);
 	tileArea->setObjectName("layerTiles");
 	tileLayout = new QHBoxLayout(tileArea);
-	tileLayout->setContentsMargins(4, 5, 4, 5);
-	tileLayout->setSpacing(10);
+	tileLayout->setContentsMargins(0, 5, 8, 5);
+	tileLayout->setSpacing(8);
+
+	/* "Add shot": same size as a shot picture, opens this row's menu */
+	addShotHolder = new QWidget(tileArea);
+	QVBoxLayout *holderLayout = new QVBoxLayout(addShotHolder);
+	holderLayout->setContentsMargins(ShotTile::kOutlineMargin, ShotTile::kOutlineMargin, ShotTile::kOutlineMargin, 0);
+	holderLayout->setSpacing(0);
+	QToolButton *addButton = new QToolButton(addShotHolder);
+	addButton->setIcon(WirecastIcons::icon(WirecastIcons::Glyph::Plus, 14));
+	addButton->setIconSize(QSize(14, 14));
+	addButton->setText(QTStr("Wirecast.Layers.AddShotTile"));
+	addButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	addButton->setToolTip(QTStr("Basic.Layers.AddShot"));
+	addButton->setCursor(Qt::PointingHandCursor);
+	setClasses(addButton, "wc-add-shot");
+	connect(addButton, &QToolButton::clicked, this, [this, addButton]() {
+		emit menuRequested(this->layer, addButton->mapToGlobal(QPoint(0, addButton->height())));
+	});
+	holderLayout->addWidget(addButton);
+	holderLayout->addStretch();
+	addShotButton = addButton;
+	tileLayout->addWidget(addShotHolder);
+
 	tileLayout->addStretch();
 	layout->addWidget(tileArea, 1);
+	setZoom(100);
 }
 
 void LayerRow::addTile(ShotTile *tile)
 {
-	tileLayout->insertWidget(tileLayout->count() - 1, tile);
+	/* Before "Add shot" and the stretch */
+	tileLayout->insertWidget(tileLayout->indexOf(addShotHolder), tile);
+}
+
+void LayerRow::setZoom(int percent)
+{
+	const QSize thumb = ShotTile::thumbnailSize(percent);
+	addShotButton->setFixedSize(thumb);
+	addShotHolder->setFixedWidth(thumb.width() + ShotTile::kOutlineMargin * 2);
 }
 
 void LayerRow::setState(bool hidden, bool current)
@@ -770,6 +886,7 @@ LayersPanel::LayersPanel(QWidget *parent, int onlyLayer_) : QFrame(parent), only
 
 	for (int layer = 1; layer <= kLayerCount; layer++) {
 		LayerRow *row = new LayerRow(content, layer);
+		row->setZoom(zooms[layer - 1]);
 		rowsLayout->addWidget(row);
 		rows.push_back(row);
 
@@ -1105,6 +1222,7 @@ void LayersPanel::setLayerZoom(int layer, int percent)
 			tile->setZoom(percent);
 		}
 	}
+	rows[layer - 1]->setZoom(percent);
 	saveZooms();
 }
 

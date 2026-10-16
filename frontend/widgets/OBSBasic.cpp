@@ -421,7 +421,7 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 	installEventFilter(shortcutFilter);
 
 	stringstream name;
-	name << "OBS " << App()->GetVersionString();
+	name << "LiveMix " << LIVEMIX_VERSION << " (OBS " << App()->GetVersionString() << ")";
 	blog(LOG_INFO, "%s", name.str().c_str());
 	blog(LOG_INFO, "---------------------------------");
 
@@ -1300,9 +1300,10 @@ void OBSBasic::OBSInit()
 
 	ui->sources->UpdateIcons();
 
-#if !defined(_WIN32)
+	/* "Check File Integrity" restores OBS Studio files, which would undo LiveMix */
 	delete ui->actionRepair;
 	ui->actionRepair = nullptr;
+#if !defined(_WIN32)
 #if !defined(__APPLE__)
 	delete ui->actionShowCrashLogs;
 	delete ui->actionUploadLastCrashLog;
@@ -1328,9 +1329,6 @@ void OBSBasic::OBSInit()
 #if defined(_WIN32) || defined(__APPLE__)
 	if (App()->IsUpdaterDisabled()) {
 		ui->actionCheckForUpdates->setEnabled(false);
-#if defined(_WIN32)
-		ui->actionRepair->setEnabled(false);
-#endif
 	}
 #endif
 
@@ -2091,9 +2089,9 @@ void OBSBasic::UpdateTitleBar()
 	const char *profile = config_get_string(App()->GetUserConfig(), "Basic", "Profile");
 	const char *sceneCollection = config_get_string(App()->GetUserConfig(), "Basic", "SceneCollection");
 
-	/* Wirecast style: the open document, then the application */
+	/* The open document, then the application */
 	UNUSED_PARAMETER(profile);
-	name << sceneCollection << " - OBS Studio";
+	name << sceneCollection << " - LiveMix";
 	if (safe_mode) {
 		name << " (" << Str("TitleBar.SafeMode") << ")";
 	}

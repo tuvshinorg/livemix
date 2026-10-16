@@ -13,20 +13,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-/* Wirecast-style welcome window, shown at startup and from Help > Welcome
- * Window. It doubles as the document manager: a document is a scene
- * collection.
+/* The documents window, from File > Documents (and at startup only when
+ * "Show when LiveMix starts" is ticked). A document is a scene collection.
  *
- *   +--------------------------------------+------------------------+
- *   |  logo  OBS Studio                    | Create Empty Document  |
- *   |  Version ...                         | Open Existing Document |
- *   |                                      | ---------------------- |
- *   |  Your Documents                      | Recent Documents       |
- *   |  [thumb] [thumb] [thumb] ...         |  [t] Untitled          |
- *   +--------------------------------------+------------------------+
- *   | [ ] Do not show this window again                  [Continue] |
  *   +---------------------------------------------------------------+
- */
+ *   |  [logo] Documents                                         [x] |
+ *   +------------------+--------------------------------------------+
+ *   | [New document]   |  Recent                                    |
+ *   | [Open file...]   |  [thumb]    [thumb]    [thumb]             |
+ *   |                  |  Untitled   123        ...                 |
+ *   | [ ] Show when    |                                            |
+ *   |     LiveMix starts                                            |
+ *   +------------------+--------------------------------------------+
+ *   |                                        [Close] [Open Untitled]|
+ *   +---------------------------------------------------------------+
+ *
+ * Click a document to select it, double-click (or Open) to open it,
+ * right-click or "..." for rename, duplicate, show in folder and delete. */
 
 #pragma once
 
@@ -34,12 +37,15 @@
 #include <QString>
 
 #include <filesystem>
+#include <map>
+#include <string>
 #include <vector>
 
 class OBSBasic;
 class QCheckBox;
+class QFrame;
 class QLabel;
-class QVBoxLayout;
+class QPushButton;
 class QWidget;
 class FlowLayout;
 
@@ -61,12 +67,14 @@ private:
 	OBSBasic *main;
 	QWidget *gallery = nullptr;
 	FlowLayout *galleryLayout = nullptr;
-	QLabel *galleryTitle = nullptr;
-	QVBoxLayout *recentLayout = nullptr;
-	QCheckBox *dontShow = nullptr;
+	QCheckBox *showOnStart = nullptr;
+	QPushButton *openButton = nullptr;
+	std::string selected;
+	std::map<std::string, QFrame *> cards;
 
 	std::vector<Document> documents() const;
 	void rebuild();
+	void selectDocument(const std::string &name);
 
 	void openDocument(const std::string &name);
 	void createEmpty();

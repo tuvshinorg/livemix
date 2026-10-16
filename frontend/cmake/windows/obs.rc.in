@@ -1,20 +1,21 @@
 IDI_ICON1 ICON DISCARDABLE "cmake/windows/obs-studio.ico"
 
 1 VERSIONINFO
-FILEVERSION ${OBS_VERSION_MAJOR},${OBS_VERSION_MINOR},${OBS_VERSION_PATCH},0
+FILEVERSION ${LIVEMIX_VERSION_MAJOR},${LIVEMIX_VERSION_MINOR},${LIVEMIX_VERSION_PATCH},0
+PRODUCTVERSION ${LIVEMIX_VERSION_MAJOR},${LIVEMIX_VERSION_MINOR},${LIVEMIX_VERSION_PATCH},0
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
     BLOCK "040904B0"
     BEGIN
-      VALUE "CompanyName", "OBS"
-      VALUE "FileDescription", "OBS Studio"
-      VALUE "FileVersion", "${OBS_VERSION_CANONICAL}"
+      VALUE "CompanyName", "LiveMix"
+      VALUE "FileDescription", "LiveMix"
+      VALUE "FileVersion", "${LIVEMIX_VERSION}"
       VALUE "InternalName", "obs"
-      VALUE "OriginalFilename", "obs"
-      VALUE "ProductName", "OBS Studio"
-      VALUE "ProductVersion", "${OBS_VERSION_CANONICAL}"
-      VALUE "Comments", "Free and open source software for video recording and live streaming"
+      VALUE "OriginalFilename", "obs64.exe"
+      VALUE "ProductName", "LiveMix"
+      VALUE "ProductVersion", "${LIVEMIX_VERSION}"
+      VALUE "Comments", "Live production switcher built on OBS Studio ${OBS_VERSION_CANONICAL}"
       VALUE "LegalCopyright", "${OBS_LEGAL_COPYRIGHT}"
     END
   END

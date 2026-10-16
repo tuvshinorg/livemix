@@ -1,4 +1,5 @@
 #include "OBSAbout.hpp"
+#include "ui-config.h"
 
 #include <widgets/OBSBasic.hpp>
 #include <utility/RemoteTextThread.hpp>
@@ -27,9 +28,8 @@ OBSAbout::OBSAbout(QWidget *parent) : QDialog(parent), ui(new Ui::OBSAbout)
 		bitness = " (64 bit)";
 	}
 
-	QString ver = obs_get_version_string();
-
-	ui->version->setText(ver + bitness);
+	ui->name->setText("LiveMix");
+	ui->version->setText(QString("%1 (OBS Studio %2)%3").arg(LIVEMIX_VERSION, obs_get_version_string(), bitness));
 
 	ui->contribute->setText(QTStr("About.Contribute"));
 

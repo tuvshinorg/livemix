@@ -32,6 +32,7 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPointer>
 #include <QTimer>
 #include <QStyle>
 #include <QToolButton>
@@ -91,54 +92,34 @@ public:
 protected:
 	void paintEvent(QPaintEvent *) override
 	{
+		/* A quiet empty monitor: dark picture, two lines of muted text, the red Live outline */
 		QPainter p(this);
 		const QRect r = rect();
-		p.fillRect(r, Qt::black);
-
-		/* Scattered red and amber dots */
-		constexpr int kStep = 8;
-		for (int y = 4; y < r.height(); y += kStep) {
-			for (int x = 4; x < r.width(); x += kStep) {
-				const uint32_t h = uint32_t(x / kStep) * 73856093u ^ uint32_t(y / kStep) * 19349663u;
-				const uint32_t v = (h ^ (h >> 13)) * 0x5bd1e995u;
-				if ((v >> 7) % 7 > 1) {
-					continue;
-				}
-				QColor dot = (v >> 3) % 3 == 0 ? QColor(0xE4, 0x35, 0x06) : QColor(0xB0, 0x5A, 0x14);
-				dot.setAlpha(70 + int((v >> 11) % 120));
-				p.fillRect(QRect(x, y, 2, 2), dot);
-			}
-		}
-
+		p.fillRect(r, QColor(0x0D, 0x0E, 0x0F));
 		p.setRenderHint(QPainter::Antialiasing);
-		p.setRenderHint(QPainter::SmoothPixmapTransform);
 
-		const int logoSize = std::clamp(r.height() / 6, 24, 72);
-		const QPixmap logo = QApplication::windowIcon().pixmap(QSize(logoSize, logoSize), devicePixelRatioF());
-		const int titleSize = std::clamp(r.height() / 9, 12, 48);
-		const int textSize = std::clamp(r.height() / 17, 9, 26);
-
-		const int titleY = r.height() / 2 - titleSize / 2;
-		p.drawPixmap(QRect((r.width() - logoSize) / 2, titleY - logoSize - titleSize / 3, logoSize, logoSize),
-			     logo);
+		const int titleSize = std::clamp(r.height() / 16, 11, 22);
+		const int textSize = std::clamp(r.height() / 24, 9, 15);
+		const int titleY = r.height() / 2 - titleSize;
 
 		QFont font = p.font();
 		font.setPixelSize(titleSize);
+		font.setWeight(QFont::Medium);
 		p.setFont(font);
-		p.setPen(Qt::white);
-		p.drawText(QRect(0, titleY, r.width(), titleSize + titleSize / 3), Qt::AlignHCenter | Qt::AlignVCenter,
+		p.setPen(QColor(0xA9, 0xA6, 0x9E));
+		p.drawText(QRect(0, titleY, r.width(), titleSize + titleSize / 2), Qt::AlignHCenter | Qt::AlignVCenter,
 			   QTStr("Wirecast.LiveArea.Title"));
 
 		font.setPixelSize(textSize);
+		font.setWeight(QFont::Normal);
 		p.setFont(font);
+		p.setPen(QColor(0x75, 0x72, 0x6B));
 		p.drawText(QRect(0, titleY + titleSize + titleSize / 2, r.width(), textSize * 2),
 			   Qt::AlignHCenter | Qt::AlignTop, QTStr("Wirecast.LiveArea.Text"));
 
-		/* Red Live border */
-		p.setRenderHint(QPainter::Antialiasing, false);
-		p.setPen(QPen(QColor(0xE4, 0x35, 0x06), 2));
+		p.setPen(QPen(WirecastIcons::kRed, 1.5));
 		p.setBrush(Qt::NoBrush);
-		p.drawRect(r.adjusted(1, 1, -1, -1));
+		p.drawRoundedRect(QRectF(r).adjusted(0.75, 0.75, -0.75, -0.75), 2, 2);
 	}
 };
 
@@ -173,14 +154,20 @@ protected:
 	}
 
 private:
-	QWidget *display;
-	QWidget *button;
+	/* The program display can be deleted before this frame while OBS shuts down */
+	QPointer<QWidget> display;
+	QPointer<QWidget> button;
 	LivePlaceholder *placeholder;
 	QTimer emptyTimer;
 	bool empty = false;
 
 	void updateEmpty()
 	{
+		if (!display || !button) {
+			emptyTimer.stop();
+			return;
+		}
+
 		OBSSourceAutoRelease program = obs_frontend_get_current_scene();
 		const bool nowEmpty = !sceneHasContent(obs_scene_from_source(program));
 		if (nowEmpty == empty) {
@@ -194,6 +181,10 @@ private:
 
 	void layoutChildren()
 	{
+		if (!display || !button) {
+			return;
+		}
+
 		obs_video_info ovi;
 		const double aspect = obs_get_video_info(&ovi) && ovi.base_height
 					      ? double(ovi.base_width) / double(ovi.base_height)

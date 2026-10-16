@@ -31,46 +31,53 @@
 using WirecastIcons::Glyph;
 
 namespace {
-constexpr int kTabIconSize = 26;
+constexpr int kTabIconSize = 19;
+constexpr int kTabSize = 36;
 } // namespace
 
 WirecastSidebar::WirecastSidebar(QWidget *parent) : QFrame(parent)
 {
 	setObjectName("wirecastSidebar");
 
-	QVBoxLayout *layout = new QVBoxLayout(this);
+	QHBoxLayout *layout = new QHBoxLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->setSpacing(0);
 
-	/* Icon tab row */
-	QFrame *tabRow = new QFrame(this);
-	tabRow->setObjectName("wirecastSidebarTabs");
-	tabLayout = new QHBoxLayout(tabRow);
-	tabLayout->setContentsMargins(0, 0, 4, 0);
-	tabLayout->setSpacing(0);
+	/* Icon tab rail down the left edge, collapse button at the bottom */
+	QFrame *rail = new QFrame(this);
+	rail->setObjectName("wirecastSidebarRail");
+	tabLayout = new QVBoxLayout(rail);
+	tabLayout->setContentsMargins(6, 8, 6, 8);
+	tabLayout->setSpacing(4);
 
 	tabs = new QButtonGroup(this);
 	tabs->setExclusive(true);
 
-	collapseButton = new QToolButton(tabRow);
-	collapseButton->setIcon(WirecastIcons::icon(Glyph::Collapse, 18));
-	collapseButton->setIconSize(QSize(18, 18));
+	collapseButton = new QToolButton(rail);
+	collapseButton->setIcon(WirecastIcons::icon(Glyph::Collapse, 16));
+	collapseButton->setIconSize(QSize(16, 16));
+	collapseButton->setFixedSize(kTabSize, kTabSize);
 	collapseButton->setToolTip(QTStr("Wirecast.HideSidebar"));
 	setClasses(collapseButton, "wc-sidebar-collapse");
 	connect(collapseButton, &QToolButton::clicked, this, &WirecastSidebar::collapseRequested);
 
 	tabLayout->addStretch();
 	tabLayout->addWidget(collapseButton);
-	layout->addWidget(tabRow);
+	layout->addWidget(rail);
 
-	/* Page heading, e.g. "Shot Layers" */
+	/* Page heading, e.g. "Shot Layers", above the page */
+	QVBoxLayout *pageColumn = new QVBoxLayout();
+	pageColumn->setContentsMargins(0, 0, 0, 0);
+	pageColumn->setSpacing(0);
+
 	heading = new QLabel(this);
 	heading->setObjectName("wirecastSidebarHeading");
-	layout->addWidget(heading);
+	pageColumn->addWidget(heading);
 
 	stack = new QStackedWidget(this);
 	stack->setObjectName("wirecastSidebarPages");
-	layout->addWidget(stack, 1);
+	pageColumn->addWidget(stack, 1);
+	layout->addLayout(pageColumn, 1);
 
 	connect(tabs, &QButtonGroup::idClicked, this, &WirecastSidebar::setCurrentPage);
 }
@@ -83,6 +90,7 @@ int WirecastSidebar::addPage(Glyph glyph, const QString &title, QWidget *content
 	QToolButton *tab = new QToolButton(this);
 	tab->setIcon(WirecastIcons::icon(glyph, kTabIconSize));
 	tab->setIconSize(QSize(kTabIconSize, kTabIconSize));
+	tab->setFixedSize(kTabSize, kTabSize);
 	tab->setCheckable(true);
 	tab->setToolTip(title);
 	setClasses(tab, "wc-sidebar-tab");

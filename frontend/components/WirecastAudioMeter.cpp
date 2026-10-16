@@ -62,10 +62,10 @@ constexpr int kButtonSize = 28;
 constexpr int kButtonHeight = 22;
 constexpr int kButtonIconSize = 18;
 
-const QColor kLabelColor(0x5F, 0x62, 0x6B);
-const QColor kTrackColor(0x15, 0x17, 0x1B);
-const QColor kMarkerColor(0xD9, 0xD9, 0xD9);
-const QColor kMarkerMuted(0x6E, 0x71, 0x7A);
+const QColor kLabelColor(0x6B, 0x69, 0x64);
+const QColor kTrackColor(0x14, 0x15, 0x17);
+const QColor kMarkerColor(0xD8, 0xD5, 0xCE);
+const QColor kMarkerMuted(0x75, 0x72, 0x6B);
 
 struct Zone {
 	float top;
@@ -75,9 +75,10 @@ struct Zone {
 };
 
 const Zone kZones[] = {
-	{6.0f, 0.0f, QColor(0x2B, 0x12, 0x0D), QColor(0xE4, 0x35, 0x06)},
-	{0.0f, -6.0f, QColor(0x2A, 0x1F, 0x08), QColor(0xDF, 0x9B, 0x08)},
-	{-6.0f, -60.0f, QColor(0x0D, 0x1B, 0x16), QColor(0x3D, 0xD2, 0x8C)},
+	/* Softer than broadcast-standard meters, for long shows; still red / amber / green */
+	{6.0f, 0.0f, QColor(0x33, 0x20, 0x1B), QColor(0xE5, 0x53, 0x3D)},
+	{0.0f, -6.0f, QColor(0x2E, 0x27, 0x16), QColor(0xD9, 0xA4, 0x41)},
+	{-6.0f, -60.0f, QColor(0x1A, 0x24, 0x1E), QColor(0x6F, 0xB5, 0x85)},
 };
 
 /* Shared by both meters: the gain of everything played through the
@@ -533,14 +534,14 @@ void WirecastAudioMeter::showMonitorMenu(const QPoint &globalPos)
 
 void WirecastAudioMeter::updateButtons()
 {
-	using WirecastIcons::kAmber;
+	using WirecastIcons::kIconActive;
 	using WirecastIcons::kIconColor;
 	using WirecastIcons::kIconMuted;
 
 	if (outputButton) {
 		outputButton->setChecked(!masterMuted);
 		outputButton->setIcon(WirecastIcons::icon(masterMuted ? Glyph::OutputMuted : Glyph::OutputOn, kButtonIconSize,
-							  kIconMuted, kAmber));
+							  kIconMuted, kIconActive));
 		outputButton->setToolTip(masterMuted ? QTStr("Wirecast.Audio.UnmuteLive")
 						     : QTStr("Wirecast.Audio.MuteLive"));
 	}
@@ -558,8 +559,8 @@ void WirecastAudioMeter::updateButtons()
 		monitorButton->setToolTip(QTStr("Wirecast.Audio.MonitorHeading"));
 	} else {
 		monitorButton->setChecked(listeningToPreview);
-		/* Wirecast's Preview Monitor Audio button is a speaker, amber while you listen */
-		monitorButton->setIcon(WirecastIcons::icon(Glyph::OutputOn, kButtonIconSize, kIconMuted, kAmber));
+		/* Preview Monitor Audio button: a speaker, bright while you listen */
+		monitorButton->setIcon(WirecastIcons::icon(Glyph::OutputOn, kButtonIconSize, kIconMuted, kIconActive));
 		monitorButton->setToolTip(listeningToPreview ? QTStr("Wirecast.Audio.StopListenPreview")
 							     : QTStr("Wirecast.Audio.ListenPreview"));
 	}

@@ -112,20 +112,30 @@ QByteArray loadSvg(const char *name)
 	return data;
 }
 
-/* Monitor layout swatches are flat colour blocks, as in Wirecast */
-void drawLayoutSwatches(QPainter &p, int size, Glyph glyph)
+/* Monitor layout icons: outlined monitors, each with its tally dot */
+void drawLayoutSwatches(QPainter &p, const QColor &color, int size, Glyph glyph)
 {
-	const qreal unit = size / 24.0;
-	p.setPen(Qt::NoPen);
+	p.save();
+	p.scale(size / 24.0, size / 24.0);
+	p.setPen(QPen(color, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+	p.setBrush(Qt::NoBrush);
+
+	auto monitor = [&p](const QRectF &rect, const QColor &dot) {
+		p.drawRoundedRect(rect, 1.5, 1.5);
+		p.save();
+		p.setPen(Qt::NoPen);
+		p.setBrush(dot);
+		p.drawEllipse(rect.center(), 1.8, 1.8);
+		p.restore();
+	};
+
 	if (glyph == Glyph::LayoutDual) {
-		p.setBrush(kGreen);
-		p.drawRect(QRectF(4.0 * unit, 9.0 * unit, 7.0 * unit, 6.0 * unit));
-		p.setBrush(kRed);
-		p.drawRect(QRectF(13.0 * unit, 9.0 * unit, 7.0 * unit, 6.0 * unit));
+		monitor(QRectF(2, 6.5, 9, 11), kGreen);
+		monitor(QRectF(13, 6.5, 9, 11), kRed);
 	} else {
-		p.setBrush(glyph == Glyph::LayoutPreview ? kGreen : kRed);
-		p.drawRect(QRectF(8.5 * unit, 9.0 * unit, 7.0 * unit, 6.0 * unit));
+		monitor(QRectF(4, 5.5, 16, 13), glyph == Glyph::LayoutPreview ? kGreen : kRed);
 	}
+	p.restore();
 }
 /* Wirecast's output, transport and audio buttons use solid icons rather than
  * line icons; they are drawn here on a 24-unit grid. Returns false for glyphs
@@ -181,12 +191,12 @@ bool drawSolidGlyph(QPainter &p, Glyph glyph, const QColor &color, int size)
 		break;
 	}
 	case Glyph::Go: {
-		/* Thick solid arrow */
-		QPolygonF arrow;
-		arrow << QPointF(1.5, 9.6) << QPointF(13, 9.6) << QPointF(13, 5.5) << QPointF(22.5, 12)
-		      << QPointF(13, 18.5) << QPointF(13, 14.4) << QPointF(1.5, 14.4);
-		p.setPen(Qt::NoPen);
-		p.drawPolygon(arrow);
+		/* Bold line arrow, drawn on the ivory Go button */
+		pen.setWidthF(2.6);
+		p.setPen(pen);
+		p.setBrush(Qt::NoBrush);
+		p.drawLine(QPointF(4.5, 12), QPointF(19, 12));
+		p.drawPolyline(QPolygonF() << QPointF(13, 6) << QPointF(19, 12) << QPointF(13, 18));
 		break;
 	}
 	case Glyph::Snapshot: {
@@ -224,7 +234,7 @@ QPixmap pixmap(Glyph glyph, const QColor &color, int size, qreal ratio)
 	p.setRenderHint(QPainter::Antialiasing);
 
 	if (glyph == Glyph::LayoutDual || glyph == Glyph::LayoutPreview || glyph == Glyph::LayoutLive) {
-		drawLayoutSwatches(p, size, glyph);
+		drawLayoutSwatches(p, color, size, glyph);
 		return result;
 	}
 

@@ -55,17 +55,19 @@ enum class Glyph {
 	Reset,
 };
 
-/* Palette sampled from Wirecast */
-inline const QColor kIconColor{0xDF, 0xE0, 0xE6};
-inline const QColor kIconMuted{0x8A, 0x8C, 0x94};
-inline const QColor kAmber{0xDF, 0x9B, 0x08};
-inline const QColor kRed{0xE4, 0x35, 0x06};
-inline const QColor kGreen{0x3D, 0xD2, 0x8C};
-inline const QColor kOnAmber{0x1F, 0x25, 0x2E};
+/* LiveMix "Tally" palette: warm neutrals, with colour only for on-air state
+ * (green = Preview, red = Live) */
+inline const QColor kIconColor{0xD8, 0xD5, 0xCE};
+inline const QColor kIconMuted{0x8E, 0x8B, 0x84};
+inline const QColor kIconActive{0xF3, 0xF1, 0xEC};
+inline const QColor kRed{0xE5, 0x53, 0x3D};
+inline const QColor kGreen{0x4C, 0xC3, 0x8A};
+/* Text and icons on the ivory Go button */
+inline const QColor kOnIvory{0x17, 0x18, 0x1A};
 
 QPixmap pixmap(Glyph glyph, const QColor &color, int size, qreal ratio);
 
 /* Icon with the normal colour for Off and a highlight colour for On (checked) */
-QIcon icon(Glyph glyph, int size, const QColor &normal = kIconColor, const QColor &checked = kOnAmber);
+QIcon icon(Glyph glyph, int size, const QColor &normal = kIconMuted, const QColor &checked = kIconActive);
 
 } // namespace WirecastIcons

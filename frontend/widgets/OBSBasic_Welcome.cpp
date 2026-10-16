@@ -13,10 +13,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-/* Wirecast-style documents: the welcome window, and opening, creating,
+/* Documents: the documents window (File > Documents), and opening, creating,
  * renaming, duplicating and removing scene collections from it. Each
  * collection gets a thumbnail of what it shows, saved next to the collection
- * files in "thumbnails/<file name>.png". */
+ * files in "thumbnails/<file name>.png".
+ *
+ * LiveMix opens straight into the last document. The documents window only
+ * shows at startup when "Show when LiveMix starts" is ticked in it. */
 
 #include "OBSBasic.hpp"
 
@@ -35,7 +38,8 @@
 extern bool safe_mode;
 
 namespace {
-constexpr const char *kShowWelcomeKey = "WirecastShowWelcome";
+/* A new key, so the old welcome window's "show" setting (on by default) is not carried over */
+constexpr const char *kShowWelcomeKey = "LiveMixShowDocuments";
 constexpr int kThumbnailIntervalMs = 20000;
 const QSize kThumbnailSize(320, 180);
 
@@ -140,7 +144,7 @@ void welcomeEvent(enum obs_frontend_event event, void *data)
 
 void OBSBasic::SetupWelcome()
 {
-	config_set_default_bool(App()->GetUserConfig(), "General", kShowWelcomeKey, true);
+	config_set_default_bool(App()->GetUserConfig(), "General", kShowWelcomeKey, false);
 
 	obs_frontend_add_event_callback(welcomeEvent, this);
 

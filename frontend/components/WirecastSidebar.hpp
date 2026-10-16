@@ -13,7 +13,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-/* Wirecast-style left panel: a row of icon tabs, a page heading, and the page
+/* Left panel: a vertical rail of icon tabs beside the page heading and the page
  * contents. It hosts the Shot Editor tabs (see ShotEditor.hpp). */
 
 #pragma once
@@ -25,7 +25,7 @@
 #include <vector>
 
 class QButtonGroup;
-class QHBoxLayout;
+class QVBoxLayout;
 class QLabel;
 class QStackedWidget;
 class QToolButton;
@@ -35,7 +35,7 @@ class WirecastSidebar : public QFrame {
 
 	std::vector<QString> titles;
 
-	QHBoxLayout *tabLayout = nullptr;
+	QVBoxLayout *tabLayout = nullptr;
 	QButtonGroup *tabs = nullptr;
 	QToolButton *collapseButton = nullptr;
 	QLabel *heading = nullptr;

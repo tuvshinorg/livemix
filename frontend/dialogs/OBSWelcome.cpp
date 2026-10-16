@@ -50,9 +50,9 @@
 #include "moc_OBSWelcome.cpp"
 
 namespace {
-constexpr int kRecentCount = 10;
 const QSize kCardThumb(224, 126);
-const QSize kRecentThumb(32, 18);
+constexpr int kCardRadius = 8;
+constexpr const char *kShowAtStartKey = "LiveMixShowDocuments";
 
 /* The document's thumbnail, rounded; an empty dark card with the layers icon
  * when it has none yet */
@@ -69,17 +69,23 @@ QPixmap documentPixmap(const OBSWelcome::Document &document, QSize size, int rad
 	QPainterPath clip;
 	clip.addRoundedRect(QRectF(QPointF(0, 0), QSizeF(size)), radius, radius);
 	p.setClipPath(clip);
-	p.fillRect(QRect(QPoint(0, 0), size), QColor(0x0B, 0x0C, 0x0F));
+	p.fillRect(QRect(QPoint(0, 0), size), QColor(0x15, 0x16, 0x18));
 
 	QPixmap thumbnail(QString::fromStdString(document.thumbnail.u8string()));
 	if (!thumbnail.isNull()) {
 		p.drawPixmap(QRect(QPoint(0, 0), size), thumbnail);
 	} else {
-		const int iconSize = std::max(10, size.height() / 3);
+		const int iconSize = std::max(10, size.height() / 4);
 		const QPixmap icon = WirecastIcons::pixmap(WirecastIcons::Glyph::Layers, WirecastIcons::kIconMuted,
 							   iconSize, ratio);
 		p.drawPixmap((size.width() - iconSize) / 2, (size.height() - iconSize) / 2, icon);
 	}
+
+	/* Hairline outline, so dark thumbnails still read as cards */
+	p.setClipping(false);
+	p.setPen(QPen(QColor(0x2C, 0x2E, 0x33), 1));
+	p.setBrush(Qt::NoBrush);
+	p.drawRoundedRect(QRectF(0.5, 0.5, size.width() - 1, size.height() - 1), radius, radius);
 	return result;
 }
 
@@ -88,13 +94,22 @@ QString modifiedText(qint64 msecs)
 	if (msecs <= 0) {
 		return QString();
 	}
-	return QLocale().toString(QDateTime::fromMSecsSinceEpoch(msecs), QLocale::ShortFormat);
+	const QDateTime when = QDateTime::fromMSecsSinceEpoch(msecs);
+	const qint64 days = when.date().daysTo(QDate::currentDate());
+	if (days == 0) {
+		return QTStr("Wirecast.Documents.EditedToday").arg(QLocale().toString(when.time(), QLocale::ShortFormat));
+	}
+	if (days == 1) {
+		return QTStr("Wirecast.Documents.EditedYesterday");
+	}
+	return QTStr("Wirecast.Documents.Edited").arg(QLocale().toString(when.date(), QLocale::ShortFormat));
 }
 
-/* Clickable row or card; right-click asks for the document menu */
+/* Clickable card; double-click opens, right-click asks for the document menu */
 class DocumentButton : public QFrame {
 public:
 	std::function<void()> activated;
+	std::function<void()> doubleActivated;
 	std::function<void(const QPoint &)> menuRequested;
 
 	explicit DocumentButton(QWidget *parent) : QFrame(parent)
@@ -113,6 +128,15 @@ protected:
 		QFrame::mouseReleaseEvent(event);
 	}
 
+	void mouseDoubleClickEvent(QMouseEvent *event) override
+	{
+		if (event->button() == Qt::LeftButton && doubleActivated) {
+			doubleActivated();
+			return;
+		}
+		QFrame::mouseDoubleClickEvent(event);
+	}
+
 	void contextMenuEvent(QContextMenuEvent *event) override
 	{
 		if (menuRequested) {
@@ -121,134 +145,115 @@ protected:
 	}
 };
 
-QToolButton *actionButton(const QString &iconFile, const QString &text, QWidget *parent)
+QPushButton *pushButton(const QString &text, const char *classes, QWidget *parent)
 {
-	QToolButton *button = new QToolButton(parent);
-	button->setIcon(QIcon(QStringLiteral("theme:Wirecast/%1.svg").arg(iconFile)));
-	button->setIconSize(QSize(20, 20));
-	button->setText(text);
-	button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	QPushButton *button = new QPushButton(text, parent);
+	button->setFixedHeight(36);
 	button->setCursor(Qt::PointingHandCursor);
-	setClasses(button, "wc-welcome-action");
+	setClasses(button, classes);
 	return button;
 }
 } // namespace
 
 OBSWelcome::OBSWelcome(OBSBasic *main_) : QDialog(main_), main(main_)
 {
-	setObjectName("wcWelcome");
-	setWindowTitle(QTStr("Wirecast.Welcome.Title"));
+	setObjectName("lmDocuments");
+	setWindowTitle(QTStr("Wirecast.Documents.Title"));
 	setWindowFlag(Qt::WindowContextHelpButtonHint, false);
-	resize(1080, 780);
-	setMinimumSize(760, 520);
+	resize(1000, 640);
+	setMinimumSize(720, 480);
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->setSpacing(0);
+
+	/* ---- Header ---- */
+	QFrame *header = new QFrame(this);
+	header->setObjectName("lmDocumentsHeader");
+	QHBoxLayout *headerLayout = new QHBoxLayout(header);
+	headerLayout->setContentsMargins(24, 16, 24, 16);
+	headerLayout->setSpacing(12);
+	QLabel *logo = new QLabel(header);
+	logo->setPixmap(QApplication::windowIcon().pixmap(QSize(22, 22), devicePixelRatioF()));
+	QLabel *title = new QLabel(QTStr("Wirecast.Documents.Title"), header);
+	title->setObjectName("lmDocumentsTitle");
+	headerLayout->addWidget(logo);
+	headerLayout->addWidget(title);
+	headerLayout->addStretch();
+	layout->addWidget(header);
 
 	QHBoxLayout *columns = new QHBoxLayout();
 	columns->setContentsMargins(0, 0, 0, 0);
 	columns->setSpacing(0);
 	layout->addLayout(columns, 1);
 
-	/* ---- Left: start page with every document as a picture ---- */
-	QScrollArea *home = new QScrollArea(this);
-	home->setObjectName("wcWelcomeHome");
-	home->setWidgetResizable(true);
-	home->setFrameShape(QFrame::NoFrame);
-	home->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-	QWidget *homeContent = new QWidget(home);
-	homeContent->setObjectName("wcWelcomeHomeContent");
-	QVBoxLayout *homeLayout = new QVBoxLayout(homeContent);
-	homeLayout->setContentsMargins(40, 48, 40, 32);
-	homeLayout->setSpacing(0);
-
-	QHBoxLayout *brand = new QHBoxLayout();
-	brand->setSpacing(18);
-	brand->addStretch();
-	QLabel *logo = new QLabel(homeContent);
-	logo->setPixmap(QApplication::windowIcon().pixmap(QSize(76, 76), devicePixelRatioF()));
-	QLabel *appName = new QLabel(QStringLiteral("OBS Studio"), homeContent);
-	appName->setObjectName("wcWelcomeAppName");
-	brand->addWidget(logo);
-	brand->addWidget(appName);
-	brand->addStretch();
-	homeLayout->addLayout(brand);
-
-	QLabel *version = new QLabel(QTStr("Wirecast.Welcome.Version").arg(App()->GetVersionString(false).c_str()),
-				     homeContent);
-	version->setObjectName("wcWelcomeVersion");
-	version->setAlignment(Qt::AlignCenter);
-	homeLayout->addSpacing(14);
-	homeLayout->addWidget(version);
-	homeLayout->addSpacing(40);
-
-	galleryTitle = new QLabel(homeContent);
-	galleryTitle->setObjectName("wcWelcomeSection");
-	homeLayout->addWidget(galleryTitle);
-	homeLayout->addSpacing(12);
-
-	gallery = new QWidget(homeContent);
-	galleryLayout = new FlowLayout(gallery, 0, 16, 16);
-	homeLayout->addWidget(gallery);
-	homeLayout->addStretch();
-
-	home->setWidget(homeContent);
-	columns->addWidget(home, 1);
-
-	/* ---- Right: actions and recent documents ---- */
+	/* ---- Left: create / open, and the startup setting ---- */
 	QFrame *side = new QFrame(this);
-	side->setObjectName("wcWelcomeSide");
-	side->setFixedWidth(268);
+	side->setObjectName("lmDocumentsSide");
+	side->setFixedWidth(248);
 	QVBoxLayout *sideLayout = new QVBoxLayout(side);
-	sideLayout->setContentsMargins(10, 10, 10, 10);
-	sideLayout->setSpacing(2);
+	sideLayout->setContentsMargins(20, 20, 20, 20);
+	sideLayout->setSpacing(8);
 
-	QToolButton *createButton =
-		actionButton(QStringLiteral("file-plus"), QTStr("Wirecast.Welcome.CreateEmpty"), side);
-	QToolButton *openButton =
-		actionButton(QStringLiteral("folder-open"), QTStr("Wirecast.Welcome.OpenExisting"), side);
-	connect(createButton, &QToolButton::clicked, this, &OBSWelcome::createEmpty);
-	connect(openButton, &QToolButton::clicked, this, &OBSWelcome::openExisting);
+	QPushButton *createButton = pushButton(QTStr("Wirecast.Documents.New"), "lm-primary-button", side);
+	QPushButton *openFileButton = pushButton(QTStr("Wirecast.Documents.OpenFile"), "lm-secondary-button", side);
+	createButton->setAutoDefault(false);
+	openFileButton->setAutoDefault(false);
+	connect(createButton, &QPushButton::clicked, this, &OBSWelcome::createEmpty);
+	connect(openFileButton, &QPushButton::clicked, this, &OBSWelcome::openExisting);
 	sideLayout->addWidget(createButton);
-	sideLayout->addWidget(openButton);
-
-	QFrame *line = new QFrame(side);
-	line->setObjectName("wcWelcomeLine");
-	line->setFixedHeight(1);
-	sideLayout->addSpacing(6);
-	sideLayout->addWidget(line);
-	sideLayout->addSpacing(8);
-
-	QLabel *recentTitle = new QLabel(QTStr("Wirecast.Welcome.Recent"), side);
-	recentTitle->setObjectName("wcWelcomeRecentTitle");
-	sideLayout->addWidget(recentTitle);
-	sideLayout->addSpacing(6);
-
-	recentLayout = new QVBoxLayout();
-	recentLayout->setContentsMargins(0, 0, 0, 0);
-	recentLayout->setSpacing(1);
-	sideLayout->addLayout(recentLayout);
+	sideLayout->addWidget(openFileButton);
 	sideLayout->addStretch();
+
+	showOnStart = new QCheckBox(QTStr("Wirecast.Documents.ShowOnStart"), side);
+	showOnStart->setChecked(config_get_bool(App()->GetUserConfig(), "General", kShowAtStartKey));
+	QLabel *hint = new QLabel(QTStr("Wirecast.Documents.ShowOnStart.Hint"), side);
+	hint->setObjectName("lmDocumentsHint");
+	hint->setWordWrap(true);
+	sideLayout->addWidget(showOnStart);
+	sideLayout->addWidget(hint);
 	columns->addWidget(side);
+
+	/* ---- Right: every document as a card ---- */
+	QScrollArea *body = new QScrollArea(this);
+	body->setObjectName("lmDocumentsBody");
+	body->setWidgetResizable(true);
+	body->setFrameShape(QFrame::NoFrame);
+	body->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+	QWidget *bodyContent = new QWidget(body);
+	bodyContent->setObjectName("lmDocumentsBodyContent");
+	QVBoxLayout *bodyLayout = new QVBoxLayout(bodyContent);
+	bodyLayout->setContentsMargins(24, 20, 24, 24);
+	bodyLayout->setSpacing(14);
+
+	QLabel *section = new QLabel(QTStr("Wirecast.Documents.Recent"), bodyContent);
+	section->setObjectName("lmDocumentsSection");
+	bodyLayout->addWidget(section);
+
+	gallery = new QWidget(bodyContent);
+	galleryLayout = new FlowLayout(gallery, 0, 16, 16);
+	bodyLayout->addWidget(gallery);
+	bodyLayout->addStretch();
+
+	body->setWidget(bodyContent);
+	columns->addWidget(body, 1);
 
 	/* ---- Footer ---- */
 	QFrame *footer = new QFrame(this);
-	footer->setObjectName("wcWelcomeFooter");
+	footer->setObjectName("lmDocumentsFooter");
 	QHBoxLayout *footerLayout = new QHBoxLayout(footer);
-	footerLayout->setContentsMargins(18, 12, 16, 12);
-	dontShow = new QCheckBox(QTStr("Wirecast.Welcome.DontShow"), footer);
-	dontShow->setChecked(!config_get_bool(App()->GetUserConfig(), "General", "WirecastShowWelcome"));
-	QPushButton *continueButton = new QPushButton(QTStr("Wirecast.Welcome.Continue"), footer);
-	continueButton->setObjectName("wcWelcomeContinue");
-	continueButton->setFixedSize(130, 30);
-	continueButton->setDefault(true);
-	connect(continueButton, &QPushButton::clicked, this, &QDialog::accept);
-	footerLayout->addWidget(dontShow);
+	footerLayout->setContentsMargins(16, 14, 16, 14);
+	footerLayout->setSpacing(8);
+	QPushButton *closeButton = pushButton(QTStr("Close"), "lm-secondary-button", footer);
+	closeButton->setAutoDefault(false);
+	connect(closeButton, &QPushButton::clicked, this, &QDialog::reject);
+	openButton = pushButton(QString(), "lm-primary-button", footer);
+	openButton->setDefault(true);
+	connect(openButton, &QPushButton::clicked, this, [this]() { openDocument(selected); });
 	footerLayout->addStretch();
-	footerLayout->addWidget(continueButton);
+	footerLayout->addWidget(closeButton);
+	footerLayout->addWidget(openButton);
 	layout->addWidget(footer);
 
 	rebuild();
@@ -278,84 +283,99 @@ std::vector<OBSWelcome::Document> OBSWelcome::documents() const
 
 void OBSWelcome::rebuild()
 {
-	for (QLayout *list : {static_cast<QLayout *>(galleryLayout), static_cast<QLayout *>(recentLayout)}) {
-		while (QLayoutItem *child = list->takeAt(0)) {
-			if (QWidget *w = child->widget()) {
-				w->hide();
-				w->deleteLater();
-			}
-			delete child;
+	while (QLayoutItem *child = galleryLayout->takeAt(0)) {
+		if (QWidget *w = child->widget()) {
+			w->hide();
+			w->deleteLater();
 		}
+		delete child;
 	}
+	cards.clear();
 
 	const std::vector<Document> docs = documents();
 	const qreal ratio = devicePixelRatioF();
-	galleryTitle->setText(QTStr("Wirecast.Welcome.Documents").arg(docs.size()));
+
+	/* Keep the selection if that document still exists, else select the open one */
+	const bool keep = std::any_of(docs.begin(), docs.end(), [this](const Document &d) { return d.name == selected; });
+	if (!keep) {
+		selected.clear();
+		for (const Document &document : docs) {
+			if (document.current || selected.empty()) {
+				selected = document.name;
+			}
+		}
+	}
 
 	for (const Document &document : docs) {
-		/* Gallery card: picture, name, last saved */
+		/* Card: picture, then name and "Open now" / last edited, with a "..." menu button */
 		DocumentButton *card = new DocumentButton(gallery);
-		setClasses(card, document.current ? "wc-welcome-card wc-welcome-current" : "wc-welcome-card");
 		QVBoxLayout *cardLayout = new QVBoxLayout(card);
-		cardLayout->setContentsMargins(6, 6, 6, 8);
-		cardLayout->setSpacing(4);
+		cardLayout->setContentsMargins(4, 4, 4, 6);
+		cardLayout->setSpacing(8);
 
 		QLabel *picture = new QLabel(card);
 		picture->setFixedSize(kCardThumb);
-		picture->setPixmap(documentPixmap(document, kCardThumb, 5, ratio));
+		picture->setPixmap(documentPixmap(document, kCardThumb, kCardRadius, ratio));
 		cardLayout->addWidget(picture);
 
+		QHBoxLayout *caption = new QHBoxLayout();
+		caption->setContentsMargins(2, 0, 0, 0);
+		caption->setSpacing(4);
+		QVBoxLayout *text = new QVBoxLayout();
+		text->setContentsMargins(0, 0, 0, 0);
+		text->setSpacing(2);
+
 		QLabel *name = new QLabel(card);
-		name->setObjectName("wcWelcomeCardName");
+		name->setObjectName("lmDocCardName");
 		name->setText(QFontMetrics(name->font())
-				      .elidedText(QT_UTF8(document.name.c_str()), Qt::ElideRight, kCardThumb.width()));
-		cardLayout->addWidget(name);
-
+				      .elidedText(QT_UTF8(document.name.c_str()), Qt::ElideRight, kCardThumb.width() - 40));
 		QLabel *detail = new QLabel(card);
-		detail->setObjectName("wcWelcomeCardDetail");
-		detail->setText(document.current ? QTStr("Wirecast.Welcome.OpenNow")
-						 : modifiedText(document.modified));
-		cardLayout->addWidget(detail);
+		detail->setObjectName("lmDocCardDetail");
+		detail->setText(document.current ? QTStr("Wirecast.Welcome.OpenNow") : modifiedText(document.modified));
+		text->addWidget(name);
+		text->addWidget(detail);
+		caption->addLayout(text, 1);
 
-		card->setToolTip(QT_UTF8(document.name.c_str()));
+		QToolButton *more = new QToolButton(card);
+		more->setIcon(QIcon(QStringLiteral("theme:Wirecast/dots.svg")));
+		more->setIconSize(QSize(16, 16));
+		more->setFixedSize(30, 30);
+		more->setToolTip(QTStr("Wirecast.Documents.More").arg(QT_UTF8(document.name.c_str())));
+		setClasses(more, "lm-doc-more");
+		caption->addWidget(more, 0, Qt::AlignVCenter);
+		cardLayout->addLayout(caption);
+
+		card->setToolTip(QString::fromStdString(document.file.u8string()));
 		const std::string docName = document.name;
-		card->activated = [this, docName]() { openDocument(docName); };
+		card->activated = [this, docName]() { selectDocument(docName); };
+		card->doubleActivated = [this, docName]() { openDocument(docName); };
 		card->menuRequested = [this, document](const QPoint &pos) { showDocumentMenu(document, pos); };
+		connect(more, &QToolButton::clicked, this, [this, document, more]() {
+			showDocumentMenu(document, more->mapToGlobal(QPoint(0, more->height())));
+		});
+
+		cards[document.name] = card;
 		galleryLayout->addWidget(card);
 	}
 
-	/* Recent Documents list on the right */
-	int count = 0;
-	for (const Document &document : docs) {
-		if (count++ >= kRecentCount) {
-			break;
-		}
+	selectDocument(selected);
+}
 
-		DocumentButton *row = new DocumentButton(this);
-		setClasses(row, "wc-welcome-recent");
-		QHBoxLayout *rowLayout = new QHBoxLayout(row);
-		rowLayout->setContentsMargins(8, 4, 8, 4);
-		rowLayout->setSpacing(10);
-
-		QLabel *picture = new QLabel(row);
-		picture->setFixedSize(kRecentThumb);
-		picture->setPixmap(documentPixmap(document, kRecentThumb, 2, ratio));
-		QLabel *name = new QLabel(QT_UTF8(document.name.c_str()), row);
-		name->setObjectName("wcWelcomeRecentName");
-		rowLayout->addWidget(picture);
-		rowLayout->addWidget(name, 1);
-
-		row->setToolTip(QString::fromStdString(document.file.u8string()));
-		const std::string docName = document.name;
-		row->activated = [this, docName]() { openDocument(docName); };
-		row->menuRequested = [this, document](const QPoint &pos) { showDocumentMenu(document, pos); };
-		recentLayout->addWidget(row);
+void OBSWelcome::selectDocument(const std::string &name)
+{
+	selected = name;
+	for (const auto &[cardName, card] : cards) {
+		setClasses(card, cardName == name ? "lm-doc-card lm-doc-selected" : "lm-doc-card");
 	}
+
+	openButton->setEnabled(!name.empty());
+	openButton->setText(name.empty() ? QTStr("Wirecast.Welcome.Open")
+					 : QTStr("Wirecast.Documents.OpenNamed").arg(QT_UTF8(name.c_str())));
 }
 
 void OBSWelcome::openDocument(const std::string &name)
 {
-	if (main->OpenCollection(name)) {
+	if (!name.empty() && main->OpenCollection(name)) {
 		accept();
 	}
 }
@@ -375,7 +395,7 @@ void OBSWelcome::openExisting()
 		folder = docs.front().file.parent_path();
 	}
 
-	const QString file = OpenFile(this, QTStr("Wirecast.Welcome.OpenExisting"),
+	const QString file = OpenFile(this, QTStr("Wirecast.Documents.OpenFile"),
 				      QString::fromStdString(folder.u8string()),
 				      QTStr("Wirecast.Welcome.FileFilter") + QStringLiteral(" (*.json)"));
 	if (file.isEmpty()) {
@@ -390,6 +410,8 @@ void OBSWelcome::showDocumentMenu(const Document &document, const QPoint &global
 {
 	const std::string name = document.name;
 	const QString qname = QT_UTF8(name.c_str());
+
+	selectDocument(name);
 
 	QMenu menu(this);
 	connect(menu.addAction(QTStr("Wirecast.Welcome.Open")), &QAction::triggered, this,
@@ -407,7 +429,9 @@ void OBSWelcome::showDocumentMenu(const Document &document, const QPoint &global
 			OBSMessageBox::warning(this, QTStr("NameExists.Title"), QTStr("NameExists.Text"));
 			return;
 		}
-		main->RenameCollection(name, newName);
+		if (main->RenameCollection(name, newName)) {
+			selected = newName;
+		}
 		rebuild();
 	});
 	connect(menu.addAction(QTStr("Wirecast.Welcome.Duplicate")), &QAction::triggered, this, [this, name]() {
@@ -435,6 +459,6 @@ void OBSWelcome::showDocumentMenu(const Document &document, const QPoint &global
 
 void OBSWelcome::done(int result)
 {
-	config_set_bool(App()->GetUserConfig(), "General", "WirecastShowWelcome", !dontShow->isChecked());
+	config_set_bool(App()->GetUserConfig(), "General", kShowAtStartKey, showOnStart->isChecked());
 	QDialog::done(result);
 }

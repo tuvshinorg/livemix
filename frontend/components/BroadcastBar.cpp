@@ -22,7 +22,6 @@
 
 #include <QButtonGroup>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QToolButton>
 
 #include "moc_BroadcastBar.cpp"
@@ -30,10 +29,12 @@
 using WirecastIcons::Glyph;
 
 namespace {
-constexpr int kIconSize = 22;
-constexpr int kLayoutIconSize = 20;
-/* Wirecast's output buttons */
-constexpr QSize kToolButtonSize(42, 28);
+constexpr int kIconSize = 18;
+constexpr int kLayoutIconSize = 18;
+constexpr QSize kToolButtonSize(34, 34);
+constexpr int kOutputButtonHeight = 34;
+/* Text and icon of a running output, on its red-tinted pill */
+const QColor kActiveOutputColor(0xF6, 0xB3, 0xA5);
 
 QToolButton *createToolButton(QWidget *parent, Glyph glyph, const QString &tooltip)
 {
@@ -62,8 +63,8 @@ BroadcastBar::BroadcastBar(QWidget *parent) : QFrame(parent)
 	setObjectName("wirecastBroadcastBar");
 
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	layout->setContentsMargins(6, 4, 8, 4);
-	layout->setSpacing(4);
+	layout->setContentsMargins(10, 5, 10, 5);
+	layout->setSpacing(8);
 
 	expandButton = createToolButton(this, Glyph::Expand, QTStr("Wirecast.ShowSidebar"));
 	expandButton->setVisible(false);
@@ -76,8 +77,6 @@ BroadcastBar::BroadcastBar(QWidget *parent) : QFrame(parent)
 
 	for (OutputClock *clock : {&stream, &record, &replay}) {
 		layout->addWidget(clock->button);
-		layout->addWidget(clock->label);
-		layout->addSpacing(10);
 	}
 
 	connect(stream.button, &QToolButton::clicked, this, &BroadcastBar::streamClicked);
@@ -94,15 +93,14 @@ BroadcastBar::BroadcastBar(QWidget *parent) : QFrame(parent)
 	QFrame *layoutGroup = new QFrame(this);
 	layoutGroup->setObjectName("wirecastLayoutGroup");
 	QHBoxLayout *groupLayout = new QHBoxLayout(layoutGroup);
-	groupLayout->setContentsMargins(0, 0, 0, 0);
-	groupLayout->setSpacing(0);
+	groupLayout->setContentsMargins(3, 3, 3, 3);
+	groupLayout->setSpacing(2);
 
 	auto createLayoutButton = [&](Glyph glyph, const QString &tooltip, int mode) {
 		QToolButton *button = new QToolButton(layoutGroup);
-		button->setIcon(QIcon(
-			WirecastIcons::pixmap(glyph, WirecastIcons::kIconColor, kLayoutIconSize, devicePixelRatioF())));
+		button->setIcon(WirecastIcons::icon(glyph, kLayoutIconSize));
 		button->setIconSize(QSize(kLayoutIconSize, kLayoutIconSize));
-		button->setFixedSize(40, 28);
+		button->setFixedSize(34, 28);
 		button->setCheckable(true);
 		button->setToolTip(tooltip);
 		setClasses(button, "wc-layout-button");
@@ -142,22 +140,36 @@ void BroadcastBar::setupClock(OutputClock &clock, int glyph, const QString &capt
 {
 	clock.caption = caption;
 	clock.glyph = glyph;
-	clock.button = createToolButton(this, Glyph(glyph), tooltip);
 
-	clock.label = new QLabel(this);
-	setClasses(clock.label, "wc-clock");
+	QToolButton *button = new QToolButton(this);
+	button->setIcon(WirecastIcons::icon(Glyph(glyph), kIconSize, WirecastIcons::kIconColor));
+	button->setIconSize(QSize(kIconSize, kIconSize));
+	button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	button->setFixedHeight(kOutputButtonHeight);
+	button->setToolTip(tooltip);
+	button->setCursor(Qt::PointingHandCursor);
+	setClasses(button, "wc-output-button");
+
+	/* Same-width digits, and room for the longest clock, so the pill never jumps as time runs */
+	QFont font = button->font();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+	font.setFeature(QFont::Tag("tnum"), 1);
+#endif
+	button->setFont(font);
+	clock.button = button;
 	updateClockLabel(clock);
+	button->setMinimumWidth(button->sizeHint().width() + 6);
 }
 
 void BroadcastBar::setClockActive(OutputClock &clock, bool active)
 {
 	clock.active = active;
 	clock.button->setIcon(WirecastIcons::icon(Glyph(clock.glyph), kIconSize,
-						  active ? WirecastIcons::kRed : WirecastIcons::kIconColor));
+						  active ? kActiveOutputColor : WirecastIcons::kIconColor));
 	if (active) {
 		clock.elapsed.start();
 	}
-	setClasses(clock.label, active ? "wc-clock wc-clock-active" : "wc-clock");
+	setClasses(clock.button, active ? "wc-output-button wc-output-active" : "wc-output-button");
 	updateClockLabel(clock);
 
 	if (stream.active || record.active || replay.active) {
@@ -170,7 +182,7 @@ void BroadcastBar::setClockActive(OutputClock &clock, bool active)
 void BroadcastBar::updateClockLabel(OutputClock &clock)
 {
 	const qint64 ms = clock.active ? clock.elapsed.elapsed() : 0;
-	clock.label->setText(QString("%1: %2").arg(clock.caption, formatElapsed(ms)));
+	clock.button->setText(QString("%1   %2").arg(clock.caption, formatElapsed(ms)));
 }
 
 void BroadcastBar::updateClocks()
@@ -183,7 +195,7 @@ void BroadcastBar::updateClocks()
 void BroadcastBar::setVirtualCamActive(bool active)
 {
 	virtualCamButton->setIcon(WirecastIcons::icon(
-		Glyph::Display, kIconSize, active ? WirecastIcons::kRed : WirecastIcons::kIconColor));
+		Glyph::Display, kIconSize, active ? WirecastIcons::kRed : WirecastIcons::kIconMuted));
 	virtualCamButton->setToolTip(active ? QTStr("Basic.Main.StopVirtualCam")
 					    : QTStr("Basic.Main.StartVirtualCam"));
 }

@@ -274,6 +274,11 @@ void OBSBasic::SetupWirecastMenus()
 		bfree(names);
 	});
 
+	/* The documents window; it no longer opens by itself at startup */
+	QAction *documentsAction =
+		addShortcutAction(fileMenu, QTStr("Wirecast.Documents.Menu"), QKeySequence("Ctrl+Shift+O"));
+	connect(documentsAction, &QAction::triggered, this, &OBSBasic::ShowWelcome);
+
 	QAction *importAction = addShortcutAction(fileMenu, QTStr("Wirecast.File.ImportMedia"), QKeySequence("Ctrl+I"));
 	connect(importAction, &QAction::triggered, this, [this]() {
 		const QStringList files = QFileDialog::getOpenFileNames(this, QTStr("Wirecast.File.ImportMedia"));
@@ -479,6 +484,8 @@ void OBSBasic::SetupWirecastMenus()
 	autoLiveAction->setChecked(LayersPanel::autoLive());
 	if (transitionBar) {
 		transitionBar->setAutoLive(LayersPanel::autoLive());
+		/* The Auto live checkbox under the monitors drives the same setting */
+		connect(transitionBar, &TransitionBar::autoLiveToggled, autoLiveAction, &QAction::setChecked);
 	}
 
 	QAction *swapAction = switchMenu->addAction(QTStr("Wirecast.Switch.LivePreviewSwap"));
@@ -832,10 +839,6 @@ void OBSBasic::SetupWirecastMenus()
 	/* Help                                                             */
 
 	QMenu *helpMenu = ui->menuBasic_MainMenu_Help;
-	QAction *welcome = new QAction(QTStr("Wirecast.Welcome.Menu"), helpMenu);
-	connect(welcome, &QAction::triggered, this, &OBSBasic::ShowWelcome);
-	helpMenu->insertAction(helpMenu->actions().value(0), welcome);
-	helpMenu->insertSeparator(helpMenu->actions().value(1));
 	helpMenu->addAction(ui->actionShowSettingsFolder);
 	helpMenu->addAction(ui->actionShowProfileFolder);
 	bar->addMenu(helpMenu);

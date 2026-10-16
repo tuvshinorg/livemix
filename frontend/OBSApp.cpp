@@ -1002,7 +1002,12 @@ OBSApp::OBSApp(int &argc, char **argv, profiler_name_store_t *store)
 	sleepInhibitor = os_inhibit_sleep_create("OBS Video/audio");
 
 #ifndef __APPLE__
-	setWindowIcon(QIcon::fromTheme("obs", QIcon(":/res/images/obs.png")));
+	/* LiveMix icon; 16-24 px come from a hand-simplified drawing, not a scale-down */
+	QIcon appIcon;
+	for (int size : {16, 20, 24, 32, 48, 64, 256}) {
+		appIcon.addFile(QStringLiteral(":/res/images/livemix/livemix-%1.png").arg(size), QSize(size, size));
+	}
+	setWindowIcon(appIcon);
 #endif
 
 	setDesktopFileName("com.obsproject.Studio");

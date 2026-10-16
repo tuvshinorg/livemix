@@ -13,7 +13,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-/* Wirecast-style transition strip under the monitors:  [Cut v] [Smooth v] [-> o]
+/* Transition strip under the monitors:  [Cut v] [Smooth v] [Go ->]  [ ] Auto live
  *
  * Each slot holds one OBS transition (chosen from its drop-down). Clicking a
  * slot makes its transition current; Go takes Preview live with it. */
@@ -28,6 +28,7 @@
 #include <array>
 #include <string>
 
+class QCheckBox;
 class QToolButton;
 
 class TransitionBar : public QFrame {
@@ -40,6 +41,7 @@ class TransitionBar : public QFrame {
 	int activeSlot = 1;
 
 	QToolButton *goButton = nullptr;
+	QCheckBox *autoLiveBox = nullptr;
 	bool eventCallbackRegistered = false;
 
 	void loadSlots();
@@ -65,4 +67,8 @@ public:
 
 	/* With AutoLive on, a shot click goes live by itself and Go is disabled, as in Wirecast */
 	void setAutoLive(bool enabled);
+
+signals:
+	/* The Auto live checkbox was clicked */
+	void autoLiveToggled(bool enabled);
 };

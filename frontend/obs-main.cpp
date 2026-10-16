@@ -15,6 +15,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
+#include "ui-config.h"
+
 #include <OBSApp.hpp>
 
 #include <components/VolumeAccessibleInterface.hpp>
@@ -537,6 +539,10 @@ static int run_program(fstream &logFile, int argc, char *argv[])
 		QFontDatabase::addApplicationFont(":/fonts/OpenSans-Regular.ttf");
 		QFontDatabase::addApplicationFont(":/fonts/OpenSans-Bold.ttf");
 		QFontDatabase::addApplicationFont(":/fonts/OpenSans-Italic.ttf");
+		/* LiveMix UI font (SIL OFL 1.1, see forms/fonts/Onest-OFL.txt) */
+		QFontDatabase::addApplicationFont(":/fonts/Onest-Regular.ttf");
+		QFontDatabase::addApplicationFont(":/fonts/Onest-Medium.ttf");
+		QFontDatabase::addApplicationFont(":/fonts/Onest-SemiBold.ttf");
 
 		bool created_log = false;
 
@@ -1056,7 +1062,7 @@ int main(int argc, char *argv[])
 			exit(0);
 
 		} else if (arg_is(argv[i], "--version", "-V")) {
-			std::cout << "OBS Studio - " << App()->GetVersionString(false) << "\n";
+			std::cout << "LiveMix " << LIVEMIX_VERSION << " (OBS Studio " << App()->GetVersionString(false) << ")\n";
 			exit(0);
 		}
 	}

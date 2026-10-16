@@ -21,9 +21,9 @@
 #include <algorithm>
 #include <cmath>
 
-/* Wirecast outlines its monitors: green for Preview, red for Live */
-constexpr uint32_t kMonitorBorderPreview = 0x3DB28B;
-constexpr uint32_t kMonitorBorderLive = 0xE43506;
+/* Monitors are outlined in their tally colour: green for Preview, red for Live */
+constexpr uint32_t kMonitorBorderPreview = 0x4CC38A;
+constexpr uint32_t kMonitorBorderLive = 0xE5533D;
 
 /* Draws a frame just outside a cx x cy picture whose top-left is the current origin.
  * Must be called in the graphics thread with a pixel-space ortho projection. */

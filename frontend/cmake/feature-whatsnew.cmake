@@ -2,7 +2,8 @@ include_guard(DIRECTORY)
 
 option(ENABLE_WHATSNEW "Enable WhatsNew dialog" ON)
 
-if(ENABLE_WHATSNEW AND TARGET OBS::browser-panels)
+# The What's New pages are fetched from obsproject.com and describe OBS Studio, not LiveMix
+if(ENABLE_WHATSNEW AND TARGET OBS::browser-panels AND NOT OS_WINDOWS)
   if(OS_MACOS)
     include(cmake/feature-macos-update.cmake)
   elseif(OS_LINUX)

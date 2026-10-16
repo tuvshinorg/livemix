@@ -28,6 +28,16 @@ if(NOT TARGET OBS::qt-obs-spinbox)
   add_subdirectory("${CMAKE_SOURCE_DIR}/shared/qt/obs-spinbox" obs-spinbox)
 endif()
 
+# LiveMix has its own version, independent of the OBS Studio base it is built on.
+# Updates are looked up in the GitHub releases of LIVEMIX_GITHUB_REPO.
+set(LIVEMIX_VERSION 1.0.0)
+set(LIVEMIX_GITHUB_REPO "tuvshinorg/livemix")
+string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" _livemix_version "${LIVEMIX_VERSION}")
+set(LIVEMIX_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(LIVEMIX_VERSION_MINOR ${CMAKE_MATCH_2})
+set(LIVEMIX_VERSION_PATCH ${CMAKE_MATCH_3})
+unset(_livemix_version)
+
 add_executable(obs-studio)
 add_executable(OBS::studio ALIAS obs-studio)
 
